@@ -1,0 +1,17 @@
+# Dependências
+node_modules/
+dist/
+build/
+.next/
+
+# Ambiente e Segredos 
+.env
+.env.local
+.env.*
+
+# Logs e Sistema
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

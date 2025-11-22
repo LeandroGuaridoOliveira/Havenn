@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Definimos as cores aqui, mas não aplicamos no body diretamente */
+  --background: #09090b;
+  --foreground: #ededed;
+}
+
+body {
+  background-color: var(--background);
+  /* background-color: transparent;  <-- Remova isso */
+  color: var(--foreground);
+}
+
+/* Utilitário para esconder barra de rolagem */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
