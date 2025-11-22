@@ -1,50 +1,41 @@
-import { Controller, Get, Post, Body, Param, Patch, HttpCode, HttpStatus,HttpException, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, HttpCode, HttpStatus, UseGuards, HttpException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Guarda de Segurança
+import { CreateOrderDto } from './dto/create-order.dto'; 
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  @Post()
+  // =========================================================================
+  // 1. CRIAÇÃO DE PEDIDO (POST /orders)
+  // Requer token JWT para criar o pedido (enviado pelo CartDrawer)
   @UseGuards(JwtAuthGuard) 
-  create(@Body() createOrderDto: any) {
+  @Post()
+  create(@Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(createOrderDto);
   }
 
-  // --- BUSCA GERAL (GET /orders) ---
-  @Get()
+  // =========================================================================
+  // 2. BUSCA GERAL (GET /orders) - Admin Use
   @UseGuards(JwtAuthGuard) 
+  @Get()
   findAll() {
     return this.ordersService.findAll();
   }
 
-  // --- BUSCA POR ID ESPECÍFICO (GET /orders/:id) ---
-  // Esta rota dinâmica deve ser tratada ANTES das rotas de lookup por string.
-  @Get(':id')
+  // =========================================================================
+  // 3. BUSCA POR ID ESPECÍFICO (GET /orders/:id) - Admin Use
   @UseGuards(JwtAuthGuard) 
+  @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
   }
 
-  // --- BUSCA POR EMAIL (GET /orders/email/:email) ---
-  // Rota de consulta para o cliente (com nome fixo para evitar conflito com o ID)
-  @Get('email/:email') 
-  async findOrdersByEmail(@Param('email') email: string) {
-    return this.ordersService.findOrdersByEmail(email);
-  }
-
-  // --- DOWNLOAD LINK (GET /orders/:orderId/download/:productId) ---
-  @Get(':orderId/download/:productId')
-  @UseGuards(JwtAuthGuard) 
-  async getDownloadLink(
-    @Param('orderId') orderId: string,
-    @Param('productId') productId: string
-  ) {
-    return this.ordersService.generateDownloadLink(orderId, productId);
-  }
-
-  // --- WEBHOOK MOCK (PATCH /orders/:orderId/status) ---
+  // =========================================================================
+  // 4. ATUALIZAÇÃO DE STATUS (PATCH /orders/:orderId/status) - Webhook Mock
+  // Requer token JWT para simular o pagamento (uso exclusivo do sistema).
+  @UseGuards(JwtAuthGuard)
   @Patch(':orderId/status')
   @HttpCode(HttpStatus.OK)
   async updateOrderStatus(
@@ -55,5 +46,25 @@ export class OrdersController {
       throw new HttpException('Status inválido.', HttpStatus.BAD_REQUEST);
     }
     return this.ordersService.updateStatus(orderId, status);
+  }
+
+  // =========================================================================
+  // 5. DOWNLOAD SEGURO (GET /orders/:orderId/download/:productId)
+  // Protege a geração do link temporário.
+  @UseGuards(JwtAuthGuard) 
+  @Get(':orderId/download/:productId')
+  async getDownloadLink(
+    @Param('orderId') orderId: string,
+    @Param('productId') productId: string
+  ) {
+    return this.ordersService.generateDownloadLink(orderId, productId);
+  }
+
+  // =========================================================================
+  // 6. BUSCA POR E-MAIL (GET /orders/email/:email) - Customer Lookup
+  // Não é protegida, pois o e-mail é a chave pública de consulta do cliente.
+  @Get('email/:email') 
+  async findOrdersByEmail(@Param('email') email: string) {
+    return this.ordersService.findOrdersByEmail(email);
   }
 }
