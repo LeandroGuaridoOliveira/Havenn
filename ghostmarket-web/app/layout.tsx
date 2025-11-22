@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-// REMOVA A IMPORTAÇÃO AQUI
+
+// Importação dos Componentes Globais
+import VantaBackground from "./components/VantaBackground";
+import CartDrawer from "./components/CartDrawer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,10 +21,15 @@ export default function RootLayout({
   return (
     <html lang="pt-br">
       <body className={inter.className}>
-        {/* REMOVA O COMPONENTE DAQUI */}
+        
+        <VantaBackground />
+
+        <CartDrawer />
+        
         <div className="relative z-10"> 
           {children}
         </div>
+
       </body>
     </html>
   );

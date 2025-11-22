@@ -11,11 +11,7 @@ enum Role {
   CUSTOMER
 }
 
-enum OrderStatus {
-  PENDING
-  PAID
-  FAILED
-}
+
 
 model User {
   id        String   @id @default(uuid())
@@ -28,30 +24,50 @@ model User {
   @@map("users")
 }
 
+model Order {
+  id            String      @id @default(uuid())
+  customerEmail String?     // Opcional por enquanto (futuro: login do cliente)
+  status        OrderStatus @default(PENDING)
+  totalAmount   Decimal     @db.Decimal(10, 2)
+  gatewayId     String?     // ID do Stripe/LemonSqueezy (para o futuro)
+  items         OrderItem[] // Relação com os itens
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  price     Decimal @db.Decimal(10, 2) // Preço no momento da compra
+
+  @@map("order_items")
+}
+
 model Product {
   id          String   @id @default(uuid())
   name        String
-  description String?  @db.Text // Descrição curta (card)
-  details     String?  @db.Text // NOVO: Texto longo (página do produto)
-  category    String   @default("Software") // NOVO: Categoria
-  videoUrl    String?  // NOVO: Link do YouTube/Vimeo
+  description String?  @db.Text
+  details     String?  @db.Text
+  category    String   @default("Software")
+  videoUrl    String?
   price       Decimal  @db.Decimal(10, 2)
   storageKey  String
   isActive    Boolean  @default(true)
+  
+  orderItems  OrderItem[] 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("products")
 }
 
-model Order {
-  id            String      @id @default(uuid())
-  customerEmail String
-  gatewayId     String      @unique
-  status        OrderStatus @default(PENDING)
-  totalAmount   Decimal     @db.Decimal(10, 2)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  @@map("orders")
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
 }

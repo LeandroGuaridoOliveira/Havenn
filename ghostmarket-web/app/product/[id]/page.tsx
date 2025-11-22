@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, Zap, Download, Play } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Play, Download, CheckCircle2, Zap } from "lucide-react";
+import AddToCartButton from "../../components/AddToCartButton";
 
-// Função para buscar UM produto específico
 async function getProduct(id: string) {
   const res = await fetch(`http://localhost:3000/products/${id}`, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }
 
-// Helper para pegar o ID do vídeo do YouTube
 function getYoutubeId(url: string | undefined) {
   if (!url) return null;
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -16,116 +15,128 @@ function getYoutubeId(url: string | undefined) {
   return (match && match[2].length === 11) ? match[2] : null;
 }
 
-// --- A CORREÇÃO ESTÁ AQUI EMBAIXO ---
-// Definimos params como uma Promise
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-  
-  // 1. Aguardamos a resolução dos parâmetros antes de usar
   const { id } = await params;
-
-  // 2. Agora usamos o 'id' limpo
   const product = await getProduct(id);
-  
   const youtubeId = getYoutubeId(product?.videoUrl);
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-zinc-400 gap-4">
-        <h2 className="text-xl font-bold text-white">Produto não encontrado.</h2>
-        <Link href="/" className="text-emerald-400 hover:underline">Voltar para a loja</Link>
+      <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center text-zinc-500 gap-4">
+        <p>Produto não encontrado.</p>
+        <Link href="/" className="text-indigo-400 hover:underline">Voltar ao catálogo</Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-200">
-      {/* Navbar Simplificada */}
-      <nav className="border-b border-white/5 bg-black/50 backdrop-blur-xl p-6">
-        <div className="max-w-6xl mx-auto flex items-center gap-4">
-          <Link href="/" className="text-zinc-400 hover:text-white transition flex items-center gap-2 text-sm">
-            <ArrowLeft size={16} /> Voltar para Loja
+    <div className="min-h-screen bg-[#09090b] text-zinc-200 selection:bg-indigo-500/30 pb-20">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full"></div>
+         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/05 blur-[120px] rounded-full"></div>
+      </div>
+
+      <nav className="fixed top-0 w-full z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-white/[0.02]">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center">
+          <Link href="/" className="text-sm font-medium text-zinc-400 hover:text-white transition flex items-center gap-2 group">
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Voltar para o Catálogo
           </Link>
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto p-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 pt-32 grid grid-cols-1 lg:grid-cols-12 gap-12">
         
-        {/* COLUNA DA ESQUERDA: Mídia e Descrição */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* Player de Vídeo ou Placeholder */}
-          <div className="aspect-video bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden relative shadow-2xl shadow-emerald-900/20">
+        <div className="lg:col-span-7 space-y-10">
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+               <span className="bg-white/[0.05] border border-white/[0.1] text-zinc-300 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                 {product.category || "Software"}
+               </span>
+               <span className="text-emerald-400/80 text-xs flex items-center gap-1 font-medium tracking-wide bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20">
+                 <ShieldCheck size={12} /> Verificado
+               </span>
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight mb-6 leading-tight">
+              {product.name}
+            </h1>
+
+            <p className="text-lg text-zinc-400 font-light leading-relaxed border-l-2 border-white/10 pl-6">
+               {product.description}
+            </p>
+          </div>
+
+          <div className="aspect-video bg-black rounded-2xl border border-white/10 overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.5)] group">
             {youtubeId ? (
               <iframe
-                width="100%"
-                height="100%"
+                width="100%" height="100%"
                 src={`https://www.youtube.com/embed/${youtubeId}`}
-                title="YouTube video player"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+                title="Video" allowFullScreen
                 className="absolute inset-0"
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-zinc-700">
-                <Play size={48} className="opacity-20 mb-2" />
-                <span className="text-sm">Sem vídeo demonstrativo</span>
+              <div className="flex flex-col items-center justify-center h-full text-zinc-800 bg-zinc-900/50 backdrop-blur">
+                <Play size={64} strokeWidth={1} />
+                <span className="text-xs mt-4 uppercase tracking-widest font-bold opacity-50">Preview Indisponível</span>
               </div>
             )}
           </div>
 
-          {/* Título e Infos */}
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-               <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                 {product.category || "Software"}
-               </span>
-               <span className="text-zinc-500 text-xs flex items-center gap-1">
-                 <ShieldCheck size={14} /> Verificado Vanta
-               </span>
-            </div>
-            
-            <h1 className="text-4xl font-bold text-white mb-6">{product.name}</h1>
-            
-            <div className="prose prose-invert prose-zinc max-w-none">
-              <h3 className="text-xl font-semibold text-white mb-2">Sobre o produto</h3>
-              <p className="text-zinc-400 leading-relaxed whitespace-pre-line">
-                {product.details || product.description}
-              </p>
+          <div className="prose prose-invert prose-zinc max-w-none pt-8 border-t border-white/[0.05]">
+            <h3 className="text-xl font-medium text-white mb-4">Especificações & Detalhes</h3>
+            <div className="text-zinc-400 font-light whitespace-pre-line leading-8">
+              {product.details || "Sem detalhes adicionais registrados para este asset."}
             </div>
           </div>
         </div>
 
-        {/* COLUNA DA DIREITA: Checkout (Sticky) */}
-        <div className="relative">
-          <div className="sticky top-8 bg-zinc-900/30 border border-white/10 backdrop-blur-md rounded-2xl p-8 space-y-6">
-            <div>
-              <span className="text-zinc-400 text-sm block mb-1">Preço total</span>
-              <div className="text-4xl font-bold text-white flex items-end gap-2">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))}
+        <div className="lg:col-span-5 relative">
+          <div className="sticky top-32">
+            <div className="bg-[#0c0c0e]/80 border border-white/[0.08] backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-black/50">
+              
+              <div className="mb-8">
+                <span className="text-zinc-500 text-xs uppercase tracking-widest font-bold mb-2 block">Investimento</span>
+                <div className="text-5xl font-medium text-white tracking-tighter flex items-start gap-1">
+                  <span className="text-2xl mt-2 text-zinc-500">R$</span>
+                  {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
               </div>
+
+              {/* INTEGRAÇÃO DO CARRINHO */}
+              <AddToCartButton 
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  price: Number(product.price),
+                  category: product.category || 'Software'
+                }}
+              />
+
+              <div className="mt-6 space-y-4">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                  <CheckCircle2 size={20} className="text-emerald-500 mt-0.5" />
+                  <div>
+                    <h4 className="text-white text-sm font-medium">Entrega Instantânea</h4>
+                    <p className="text-zinc-500 text-xs mt-1">Link de download enviado automaticamente para seu e-mail após a confirmação.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                  <ShieldCheck size={20} className="text-indigo-500 mt-0.5" />
+                  <div>
+                    <h4 className="text-white text-sm font-medium">Privacidade Havenn</h4>
+                    <p className="text-zinc-500 text-xs mt-1">Transação criptografada.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-white/[0.05] text-center">
+                <p className="text-[10px] text-zinc-600 uppercase tracking-widest">
+                  Pagamento Seguro via PIX ou Cartão
+                </p>
+              </div>
+
             </div>
-
-            <div className="space-y-3">
-              <button className="w-full bg-white text-black font-bold py-4 rounded-lg hover:bg-zinc-200 transition flex items-center justify-center gap-2">
-                <Zap size={20} /> Comprar Agora
-              </button>
-              <p className="text-center text-xs text-zinc-500">
-                Entrega automática via e-mail após o pagamento.
-              </p>
-            </div>
-
-            <hr className="border-white/5" />
-
-            <ul className="space-y-3 text-sm text-zinc-400">
-              <li className="flex items-center gap-3">
-                <Download size={18} className="text-emerald-400" /> 
-                Download Imediato
-              </li>
-              <li className="flex items-center gap-3">
-                <ShieldCheck size={18} className="text-emerald-400" /> 
-                Seguro & Sem Logs
-              </li>
-            </ul>
           </div>
         </div>
       </main>
