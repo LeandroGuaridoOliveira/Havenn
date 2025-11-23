@@ -134,7 +134,7 @@ export default function CheckoutReviewPage() {
         };
 
         try {
-            const res = await fetch("http://localhost:3000/orders", {
+            const res = await fetch("http://localhost:3333/orders", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -246,8 +246,8 @@ export default function CheckoutReviewPage() {
                                         type="button"
                                         onClick={() => setPaymentMethod('credit_card')}
                                         className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 flex flex-col gap-3 ${paymentMethod === 'credit_card'
-                                                ? 'bg-indigo-600/10 border-indigo-500/50 ring-1 ring-indigo-500/20'
-                                                : 'bg-zinc-900/50 border-white/5 hover:border-white/10 hover:bg-zinc-800/50'
+                                            ? 'bg-indigo-600/10 border-indigo-500/50 ring-1 ring-indigo-500/20'
+                                            : 'bg-zinc-900/50 border-white/5 hover:border-white/10 hover:bg-zinc-800/50'
                                             }`}
                                     >
                                         <div className="flex justify-between items-start w-full">
@@ -264,8 +264,8 @@ export default function CheckoutReviewPage() {
                                         type="button"
                                         onClick={() => setPaymentMethod('pix')}
                                         className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 flex flex-col gap-3 ${paymentMethod === 'pix'
-                                                ? 'bg-emerald-600/10 border-emerald-500/50 ring-1 ring-emerald-500/20'
-                                                : 'bg-zinc-900/50 border-white/5 hover:border-white/10 hover:bg-zinc-800/50'
+                                            ? 'bg-emerald-600/10 border-emerald-500/50 ring-1 ring-emerald-500/20'
+                                            : 'bg-zinc-900/50 border-white/5 hover:border-white/10 hover:bg-zinc-800/50'
                                             }`}
                                     >
                                         <div className="flex justify-between items-start w-full">
@@ -412,8 +412,8 @@ export default function CheckoutReviewPage() {
                                 type="submit"
                                 disabled={isLoading}
                                 className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${isLoading
-                                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none translate-y-0'
-                                        : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-indigo-500/25'
+                                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none translate-y-0'
+                                    : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-indigo-500/25'
                                     }`}
                             >
                                 {isLoading ? (

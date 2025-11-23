@@ -35,8 +35,8 @@ export default function DashboardPage() {
 
         try {
             // Chamada ao Backend (GET /orders/email/:email)
-            const res = await fetch(`http://localhost:3000/orders/email/${email}`);
-            
+            const res = await fetch(`http://localhost:3333/orders/email/${email}`);
+
             if (res.ok) {
                 const data = await res.json();
                 setOrders(data);
@@ -52,7 +52,7 @@ export default function DashboardPage() {
             setLoading(false);
         }
     }
-    
+
     // Helper para formatar data (opcional, mas bom para UX)
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -66,7 +66,7 @@ export default function DashboardPage() {
                 <h1 className="text-4xl font-bold text-white tracking-tight mb-4">
                     Minhas Compras
                 </h1>
-                
+
                 {/* Formulário de Busca */}
                 <form onSubmit={handleSearch} className="flex gap-4 p-4 bg-zinc-900 border border-white/[0.08] rounded-xl">
                     <Mail size={24} className="text-zinc-500 mt-2" />
@@ -94,7 +94,7 @@ export default function DashboardPage() {
                         <h2 className="text-xl font-medium text-white border-b border-white/10 pb-3 mb-6">
                             Resultados ({loading ? '...' : orders?.length || 0})
                         </h2>
-                        
+
                         {/* Loading State */}
                         {loading && <p className="text-zinc-500 text-center py-10">Buscando...</p>}
 
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                                         {order.status}
                                     </span>
                                 </div>
-                                
+
                                 <p className="text-2xl font-bold text-white">
                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.totalAmount)}
                                 </p>
@@ -127,7 +127,7 @@ export default function DashboardPage() {
                                             {order.status === 'PAID' ? (
                                                 // Link de Re-download (Vai para a página de sucesso para gerar o novo link seguro)
                                                 <Link
-                                                    href={`/checkout/success/${order.id}`} 
+                                                    href={`/checkout/success/${order.id}`}
                                                     className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-sm font-medium transition"
                                                 >
                                                     Download <Download size={16} />

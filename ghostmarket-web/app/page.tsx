@@ -15,7 +15,7 @@ interface Product {
 }
 
 async function getProducts(search?: string, category?: string): Promise<Product[]> {
-  const url = new URL("http://localhost:3000/products");
+  const url = new URL("http://localhost:3333/products");
   if (search) url.searchParams.append("search", search);
   if (category) url.searchParams.append("category", category);
 
@@ -98,8 +98,8 @@ export default async function Home(props: {
               key={cat}
               href={`/?category=${cat}`}
               className={`px-5 py-2 rounded-lg text-xs font-medium transition-all duration-300 ${currentCategory === cat
-                  ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                  : "text-zinc-500 hover:text-white hover:bg-white/[0.03]"
+                ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                : "text-zinc-500 hover:text-white hover:bg-white/[0.03]"
                 }`}
             >
               {cat}
@@ -127,7 +127,7 @@ export default async function Home(props: {
 
                     {product.imageUrl ? (
                       <img
-                        src={`http://localhost:3000${product.imageUrl}`}
+                        src={`http://localhost:3333${product.imageUrl}`}
                         alt={product.name}
                         className="w-full h-full object-cover rounded-xl shadow-2xl"
                       />

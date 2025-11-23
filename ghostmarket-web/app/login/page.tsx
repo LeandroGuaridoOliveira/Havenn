@@ -4,7 +4,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, ArrowRight, AlertCircle } from "lucide-react";
 // IMPORTANTE: Os dois pontos (..) significam "volte uma pasta" para achar components
-import VantaBackground from "../components/VantaBackground"; 
+import VantaBackground from "../components/VantaBackground";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     try {
       // 1. Tenta bater na API de Login
-      const res = await fetch("http://localhost:3000/auth/login", {
+      const res = await fetch("http://localhost:3333/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -27,10 +27,10 @@ export default function LoginPage() {
 
       if (res.ok) {
         const data = await res.json();
-        
+
         // 2. Salva o Token no Cookie (dura 1 dia)
         document.cookie = `havenn_token=${data.access_token}; path=/; max-age=86400`;
-        
+
         // 3. Redireciona para o Admin
         router.push("/admin");
       } else {
@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4 overflow-hidden relative">
-      
+
       {/* Fundo Névoa */}
       <div className="absolute inset-0 z-0">
         <VantaBackground />
@@ -54,7 +54,7 @@ export default function LoginPage() {
       {/* Card de Login */}
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 ring-1 ring-white/5">
-          
+
           {/* Cabeçalho */}
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/5 border border-white/10 mb-6 shadow-[0_0_20px_rgba(255,255,255,0.05)]">

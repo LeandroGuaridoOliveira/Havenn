@@ -46,7 +46,7 @@ export default function AdminPage() {
     setLoadingStats(true);
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('havenn_token='))?.split('=')[1];
-      const res = await fetch("http://localhost:3000/orders/stats", {
+      const res = await fetch("http://localhost:3333/orders/stats", {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -98,7 +98,7 @@ export default function AdminPage() {
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('havenn_token='))?.split('=')[1];
 
-      const res = await fetch("http://localhost:3000/products", {
+      const res = await fetch("http://localhost:3333/products", {
         method: "POST",
         headers: {
           'Authorization': `Bearer ${token}`

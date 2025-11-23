@@ -3,7 +3,7 @@ import { ArrowLeft, ShieldCheck, Play, Download, CheckCircle2, Zap } from "lucid
 import AddToCartButton from "../../components/AddToCartButton";
 
 async function getProduct(id: string) {
-  const res = await fetch(`http://localhost:3000/products/${id}`, { cache: "no-store" });
+  const res = await fetch(`http://localhost:3333/products/${id}`, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }
@@ -32,8 +32,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-200 selection:bg-indigo-500/30 pb-20">
       <div className="fixed inset-0 z-0 pointer-events-none">
-         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full"></div>
-         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/05 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/05 blur-[120px] rounded-full"></div>
       </div>
 
       <nav className="fixed top-0 w-full z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-white/[0.02]">
@@ -45,24 +45,24 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       </nav>
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 pt-32 grid grid-cols-1 lg:grid-cols-12 gap-12">
-        
+
         <div className="lg:col-span-7 space-y-10">
           <div>
             <div className="flex items-center gap-3 mb-6">
-               <span className="bg-white/[0.05] border border-white/[0.1] text-zinc-300 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                 {product.category || "Software"}
-               </span>
-               <span className="text-emerald-400/80 text-xs flex items-center gap-1 font-medium tracking-wide bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20">
-                 <ShieldCheck size={12} /> Verificado
-               </span>
+              <span className="bg-white/[0.05] border border-white/[0.1] text-zinc-300 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                {product.category || "Software"}
+              </span>
+              <span className="text-emerald-400/80 text-xs flex items-center gap-1 font-medium tracking-wide bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20">
+                <ShieldCheck size={12} /> Verificado
+              </span>
             </div>
-            
+
             <h1 className="text-4xl md:text-5xl font-medium text-white tracking-tight mb-6 leading-tight">
               {product.name}
             </h1>
 
             <p className="text-lg text-zinc-400 font-light leading-relaxed border-l-2 border-white/10 pl-6">
-               {product.description}
+              {product.description}
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         <div className="lg:col-span-5 relative">
           <div className="sticky top-32">
             <div className="bg-[#0c0c0e]/80 border border-white/[0.08] backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-black/50">
-              
+
               <div className="mb-8">
                 <span className="text-zinc-500 text-xs uppercase tracking-widest font-bold mb-2 block">Investimento</span>
                 <div className="text-5xl font-medium text-white tracking-tighter flex items-start gap-1">
@@ -103,7 +103,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               </div>
 
               {/* INTEGRAÇÃO DO CARRINHO */}
-              <AddToCartButton 
+              <AddToCartButton
                 product={{
                   id: product.id,
                   name: product.name,
