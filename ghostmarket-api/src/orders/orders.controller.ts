@@ -1,16 +1,16 @@
 import { Controller, Get, Post, Body, Param, Patch, HttpCode, HttpStatus, UseGuards, HttpException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Guarda de Segurança
-import { CreateOrderDto } from './dto/create-order.dto'; 
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   // =========================================================================
   // 1. CRIAÇÃO DE PEDIDO (POST /orders)
   // Requer token JWT para criar o pedido (enviado pelo CartDrawer)
-  @UseGuards(JwtAuthGuard) 
+  @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(createOrderDto);
@@ -18,7 +18,7 @@ export class OrdersController {
 
   // =========================================================================
   // 2. BUSCA GERAL (GET /orders) - Admin Use
-  @UseGuards(JwtAuthGuard) 
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAll() {
     return this.ordersService.findAll();
@@ -26,7 +26,7 @@ export class OrdersController {
 
   // =========================================================================
   // 3. BUSCA POR ID ESPECÍFICO (GET /orders/:id) - Admin Use
-  @UseGuards(JwtAuthGuard) 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
@@ -39,7 +39,7 @@ export class OrdersController {
   @Patch(':orderId/status')
   @HttpCode(HttpStatus.OK)
   async updateOrderStatus(
-    @Param('orderId') orderId: string, 
+    @Param('orderId') orderId: string,
     @Body('status') status: 'PAID' | 'FAILED'
   ) {
     if (status !== 'PAID' && status !== 'FAILED') {
@@ -51,7 +51,7 @@ export class OrdersController {
   // =========================================================================
   // 5. DOWNLOAD SEGURO (GET /orders/:orderId/download/:productId)
   // Protege a geração do link temporário.
-  @UseGuards(JwtAuthGuard) 
+  @UseGuards(JwtAuthGuard)
   @Get(':orderId/download/:productId')
   async getDownloadLink(
     @Param('orderId') orderId: string,
@@ -63,8 +63,17 @@ export class OrdersController {
   // =========================================================================
   // 6. BUSCA POR E-MAIL (GET /orders/email/:email) - Customer Lookup
   // Não é protegida, pois o e-mail é a chave pública de consulta do cliente.
-  @Get('email/:email') 
+  @Get('email/:email')
   async findOrdersByEmail(@Param('email') email: string) {
     return this.ordersService.findOrdersByEmail(email);
+  }
+
+  // =========================================================================
+  // 7. DASHBOARD STATS (GET /orders/stats) - Admin Only
+  // =========================================================================
+  @UseGuards(JwtAuthGuard)
+  @Get('stats')
+  async getStats() {
+    return this.ordersService.getDashboardStats();
   }
 }
