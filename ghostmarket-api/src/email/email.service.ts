@@ -4,51 +4,45 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
-  private transporter: nodemailer.Transporter;
-  private readonly logger = new Logger(EmailService.name);
+    private transporter: nodemailer.Transporter;
+    private readonly logger = new Logger(EmailService.name);
 
-  constructor(private configService: ConfigService) {
-    // Configuração do Nodemailer usando variáveis de ambiente
+    constructor(private configService: ConfigService) {
+        // Configuração do Nodemailer lendo diretamente do .env (configuração limpa)
         this.transporter = nodemailer.createTransport({
-        host: this.configService.get<string>('EMAIL_HOST'),
-        port: this.configService.get<number>('EMAIL_PORT'),
-        secure: this.configService.get<boolean>('EMAIL_SECURE'), // Manter o que está no .env
-        auth: {
-            user: this.configService.get<string>('EMAIL_USER'),
-            pass: this.configService.get<string>('EMAIL_PASS'),
-        },
-    tls: {
-      // Ignora erros de certificado (NECESSÁRIO para Ethereal e testes)
-      rejectUnauthorized: false, 
-      // Opcional: tentar forçar um protocolo mais antigo para compatibilidade
-      ciphers: 'SSLv3' 
+            host: this.configService.get<string>('EMAIL_HOST'),
+            port: this.configService.get<number>('EMAIL_PORT'),
+            secure: this.configService.get<string>('EMAIL_SECURE') === 'true', // true para 465, false para 587
+            auth: {
+                user: this.configService.get<string>('EMAIL_USER'),
+                pass: this.configService.get<string>('EMAIL_PASS'),
+            },
+            // NOTA: O BLOCO TLS CUSTOMIZADO FOI REMOVIDO PARA EVITAR CONFLITO DE PROTOCOLO (wrong version number)
+        });
     }
-    });
-  }
 
-  // ASSINATURA FINAL: Aceita 5 argumentos, incluindo o licenseKey
-  async sendDownloadLink(recipientEmail: string, downloadLink: string, orderId: string, productTitle: string, licenseKey: string): Promise<void> {
-    
-    const mailOptions = {
-      from: `"${this.configService.get<string>('EMAIL_FROM_NAME')}" <${this.configService.get<string>('EMAIL_USER')}>`,
-      to: recipientEmail,
-      subject: `✅ Seu produto Havenn Market está pronto: ${productTitle}`,
-      // Passa a chave para o template HTML
-      html: this.createDownloadEmailTemplate(orderId, productTitle, downloadLink, licenseKey), 
-    };
+    // Função principal para envio da entrega
+    async sendDownloadLink(recipientEmail: string, downloadLink: string, orderId: string, productTitle: string, licenseKey: string): Promise<void> {
 
-    try {
-      const info = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`E-mail enviado para ${recipientEmail}: ${info.messageId}`);
-    } catch (error) {
-      this.logger.error(`Falha ao enviar e-mail para ${recipientEmail}:`, error.stack);
-      // O erro de falha no envio não deve quebrar a API, apenas ser logado.
+        const mailOptions = {
+            from: `"${this.configService.get<string>('EMAIL_FROM_NAME')}" <${this.configService.get<string>('EMAIL_USER')}>`,
+            to: recipientEmail,
+            subject: `✅ Seu produto Havenn Market está pronto: ${productTitle}`,
+            html: this.createDownloadEmailTemplate(orderId, productTitle, downloadLink, licenseKey),
+        };
+
+        try {
+            const info = await this.transporter.sendMail(mailOptions);
+            this.logger.log(`E-mail enviado para ${recipientEmail}: ${info.messageId}`);
+        } catch (error) {
+            // Este erro será o último a ser verificado no terminal
+            this.logger.error(`Falha ao enviar e-mail para ${recipientEmail}:`, error.stack);
+        }
     }
-  }
 
-  // Template simples de e-mail em HTML (também corrigido para 5 argumentos)
-  private createDownloadEmailTemplate(orderId: string, productTitle: string, downloadLink: string, licenseKey: string): string {
-    return `
+    // Template simples de e-mail em HTML
+    private createDownloadEmailTemplate(orderId: string, productTitle: string, downloadLink: string, licenseKey: string): string {
+        return `
       <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #09090b; color: #f4f4f5; border: 1px solid #1f2937;">
         <h2 style="color: #6366f1;">Obrigado por sua compra no Havenn Market!</h2>
         <p>Seu pedido **#${orderId.substring(0, 8)}** foi concluído com sucesso.</p>
@@ -71,5 +65,5 @@ export class EmailService {
         </p>
       </div>
     `;
-  }
+    }
 }
