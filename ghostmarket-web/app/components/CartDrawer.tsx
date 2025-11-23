@@ -1,7 +1,7 @@
 'use client';
 
 import { useCartStore } from "../store/cart-store";
-import { X, Trash2, ShoppingBag, ArrowRight, ShieldCheck, CreditCard, Loader2 } from "lucide-react";
+import { X, Trash2, ShoppingBag, ArrowRight, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; 
 
@@ -13,12 +13,10 @@ export default function CartDrawer() {
   const isOpen = useCartStore((state) => state.isOpen);
   const toggleCart = useCartStore((state) => state.toggleCart);
   const removeItem = useCartStore((state) => state.removeItem);
-  const clearCart = useCartStore((state) => state.clearCart);
+  // O customerEmail e isCheckingOut foram removidos daqui
 
-  // Estados de controle visual e dados
+  // Estados de controle visual
   const [mounted, setMounted] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [customerEmail, setCustomerEmail] = useState(''); // <-- ESTADO DO EMAIL
   
   // Garante que o componente só renderize no lado do cliente
   useEffect(() => setMounted(true), []);
@@ -26,58 +24,13 @@ export default function CartDrawer() {
 
   const total = items.reduce((acc, item) => acc + item.price, 0);
 
-  // --- FUNÇÃO DE CHECKOUT (COM VALIDAÇÃO DE E-MAIL) ---
-  async function handleCheckout() {
-    // Validação de E-mail
-    if (!customerEmail || !customerEmail.includes('@') || !customerEmail.includes('.')) {
-        alert("Por favor, insira um e-mail de entrega válido.");
-        return;
-    }
-    
-    setIsCheckingOut(true);
-
-    const token = document.cookie.split('; ').find(row => row.startsWith('havenn_token='))?.split('=')[1];
-    
-    if (!token) { 
-        alert("Erro de autenticação: Token não encontrado. Tente logar novamente.");
-        setIsCheckingOut(false);
-        return; 
-    }
-
-    const orderData = {
-        items: items.map(i => ({ id: i.id, price: i.price })),
-        total: total,
-        customerEmail: customerEmail, // <--- ENVIANDO O EMAIL
-    };
-
-    try {
-        const res = await fetch("http://localhost:3000/orders", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify(orderData),
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            
-            // Sucesso: Limpa o estado e redireciona
-            clearCart();
-            toggleCart();
-            router.push(`/checkout/success/${data.id}`);
-
-        } else {
-            alert(`⚠️ Erro ao criar o pedido. Status: ${res.status}`);
-        }
-    } catch (error) {
-        alert("⚠️ Erro de conexão com a API.");
-    } finally {
-        setIsCheckingOut(false);
-    }
-  }
-  // --- FIM DA FUNÇÃO CHECKOUT ---
+  // --- FUNÇÃO DE REDIRECIONAMENTO (FLUXO CORRETO) ---
+  const handleRedirectToCheckout = () => {
+    if (items.length === 0) return;
+    toggleCart(); // Fecha a gaveta
+    router.push('/checkout/review'); // LEVA PARA A NOVA PÁGINA DE REVISÃO
+  };
+  // --- FIM DA FUNÇÃO ---
 
   return (
     <>
@@ -90,7 +43,7 @@ export default function CartDrawer() {
       {/* A Gaveta (Controlada pelo isOpen) */}
       <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-[#0c0c0e] border-l border-white/10 z-[70] transform transition-transform duration-300 ease-out shadow-2xl flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
         
-        {/* Cabeçalho e Lista (sem alterações) */}
+        {/* Cabeçalho */}
         <div className="p-6 flex items-center justify-between border-b border-white/5">
           <h2 className="text-lg font-medium text-white flex items-center gap-2">
             <ShoppingBag size={18} /> Sua Sacola <span className="text-zinc-500">({items.length})</span>
@@ -100,6 +53,7 @@ export default function CartDrawer() {
           </button>
         </div>
 
+        {/* Lista */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-zinc-500 space-y-4 text-center">
@@ -132,21 +86,6 @@ export default function CartDrawer() {
         {items.length > 0 && (
           <div className="p-6 bg-[#09090b] border-t border-white/10 space-y-4">
             
-            {/* INPUT DE EMAIL - ADICIONADO AQUI */}
-            <div>
-                <input
-                    type="email"
-                    required
-                    placeholder="Seu melhor e-mail para entrega"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/[0.1] rounded-lg px-4 py-3 text-white outline-none focus:border-indigo-500/50 transition-all placeholder:text-zinc-600 text-sm"
-                />
-                <p className="text-xs text-zinc-500 mt-1 ml-1 flex items-center gap-1">
-                    <ShieldCheck size={12} className="text-emerald-400"/> Usado apenas para enviar o produto.
-                </p>
-            </div>
-            
             <div className="flex justify-between items-end mb-6">
               <span className="text-zinc-400 text-sm">Total estimado</span>
               <span className="text-2xl font-bold text-white">
@@ -155,11 +94,10 @@ export default function CartDrawer() {
             </div>
             
             <button 
-                onClick={handleCheckout} 
-                disabled={isCheckingOut}
-                className="w-full bg-indigo-600 text-white h-14 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition active:scale-95 disabled:opacity-50"
+                onClick={handleRedirectToCheckout}
+                className="w-full bg-indigo-600 text-white h-14 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition active:scale-95"
             >
-                {isCheckingOut ? "Processando..." : <>Ir para Pagamento <ArrowRight size={18} /></>}
+                Revisar Pedido <ArrowRight size={18} />
             </button>
             
             <div className="flex justify-center gap-4 text-[10px] text-zinc-600 uppercase tracking-widest">

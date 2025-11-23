@@ -1,45 +1,79 @@
+// src/store/cart-store.ts
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
+// 1. Tipagem (Se você estiver usando TypeScript)
+interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    category: string; // Adicionado para exibição na gaveta
 }
 
 interface CartState {
-  items: CartItem[];
-  isOpen: boolean;
-  addItem: (item: CartItem) => void;
-  removeItem: (id: string) => void;
-  toggleCart: () => void;
-  clearCart: () => void;
+    // Estado
+    items: CartItem[];
+    isOpen: boolean;
+    
+    // Getters (para simplificar o uso)
+    total: number;
+
+    // Ações
+    addItem: (item: CartItem) => void;
+    removeItem: (itemId: string) => void;
+    clearCart: () => void;
+    toggleCart: () => void; // Ação para abrir/fechar a gaveta
 }
 
+// 2. Criação do Store
 export const useCartStore = create<CartState>()(
-  persist(
-    (set) => ({
-      items: [],
-      isOpen: false,
+    persist(
+        (set, get) => ({
+            // Estado Inicial
+            items: [],
+            isOpen: false,
+            
+            // Getter (Total é calculado dinamicamente aqui)
+            get total() {
+                return get().items.reduce((acc, item) => acc + item.price, 0);
+            },
 
-      addItem: (item) => set((state) => {
-        // Evita duplicar o mesmo produto
-        const exists = state.items.find((i) => i.id === item.id);
-        if (exists) return { isOpen: true }; // Só abre o carrinho se já existe
-        return { items: [...state.items, item], isOpen: true };
-      }),
+            // Ações
+            addItem: (item) => set((state) => {
+                // Adicionar lógica de item único (Se o produto já estiver no carrinho, apenas um é permitido)
+                const existingItem = state.items.find(i => i.id === item.id);
+                if (existingItem) {
+                    return state; // Não faz nada se já existe
+                }
+                
+                // Adiciona o item e abre o carrinho
+                return { items: [...state.items, item], isOpen: true };
+            }),
 
-      removeItem: (id) => set((state) => ({
-        items: state.items.filter((i) => i.id !== id),
-      })),
+            removeItem: (itemId) => set((state) => ({
+                items: state.items.filter((item) => item.id !== itemId),
+            })),
+            
+            clearCart: () => set({ items: [] }),
 
-      toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
-      
-      clearCart: () => set({ items: [] }),
-    }),
-    {
-      name: 'havenn-cart-storage', // Nome para salvar no navegador
-    }
-  )
+            toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
+        }),
+        {
+            name: 'havenn-cart-storage', // Nome da chave no Local Storage
+            partialize: (state) => ({ 
+                items: state.items,
+                // Não persistimos o estado 'isOpen', ele deve ser falso por padrão ao carregar a página
+            }),
+            // Adicionar o `total` como getter, não como estado persistido.
+            // Para que o getter funcione corretamente fora da persistência, 
+            // ele precisa ser acessado através de `useCartStore(state => state.total)`.
+        }
+    )
 );
+
+// 3. Hook para acessar o total (Exemplo de como usar o getter)
+// É mais robusto e garante que o total é reativo.
+export function useCartTotal() {
+    return useCartStore(state => state.items.reduce((acc, item) => acc + item.price, 0));
+}
