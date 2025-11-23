@@ -1,7 +1,7 @@
 "use client";
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCartStore } from './store/cart-store'; // Ajuste o caminho conforme sua estrutura
+import { useCartStore } from '../../store/cart-store';
 import { Mail, ArrowRight, CreditCard, ShoppingCart, Loader2, Zap } from 'lucide-react';
 import Link from 'next/link';
 
