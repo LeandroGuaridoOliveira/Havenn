@@ -6,4 +6,5 @@ export class CreateProductDto {
   videoUrl?: string;  // Opcional
   price: number;
   storageKey: string;
+  imageUrl?: string;
 }

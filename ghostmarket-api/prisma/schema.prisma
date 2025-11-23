@@ -83,6 +83,7 @@ model Product {
   category      String   @default("Software")
   videoUrl      String?
   price         Decimal  @db.Decimal(10, 2)
+  imageUrl      String?  // URL da imagem do produto
   storageKey    String
   isActive      Boolean  @default(true)
   
