@@ -6,34 +6,60 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+// =========================================================================
+// ENUMS
+// =========================================================================
+
 enum Role {
   ADMIN
   CUSTOMER
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
 
+// =========================================================================
+// MODELS
+// =========================================================================
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      Role     @default(CUSTOMER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  role          Role     @default(CUSTOMER)
+  
+  // RELAÇÃO INVERSA: Um usuário pode ter muitos pedidos (necessário para o Dashboard)
+  orders        Order[] 
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("users")
 }
 
 model Order {
   id            String      @id @default(uuid())
-  customerEmail String?     // Opcional por enquanto (futuro: login do cliente)
+  
+  // LIGAÇÃO AO CLIENTE (CHAVE ESTRANGEIRA) - NOVO
+  userId        String?     
+  user          User?       @relation(fields: [userId], references: [id]) 
+  
+  // Dados de entrega (para pedidos anônimos/consulta)
+  customerEmail String?     
+  
   status        OrderStatus @default(PENDING)
   totalAmount   Decimal     @db.Decimal(10, 2)
-  licenseKey    String?     @unique 
-  gatewayId     String?     // ID do Stripe/LemonSqueezy (para o futuro)
-  items         OrderItem[] // Relação com os itens
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  gatewayId     String?
+  licenseKey    String?     @unique // Chave anti-pirataria
+  
+  items         OrderItem[] 
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("orders")
 }
@@ -44,31 +70,26 @@ model OrderItem {
   order     Order   @relation(fields: [orderId], references: [id])
   productId String
   product   Product @relation(fields: [productId], references: [id])
-  price     Decimal @db.Decimal(10, 2) // Preço no momento da compra
+  price     Decimal @db.Decimal(10, 2)
 
   @@map("order_items")
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  description String?  @db.Text
-  details     String?  @db.Text
-  category    String   @default("Software")
-  videoUrl    String?
-  price       Decimal  @db.Decimal(10, 2)
-  storageKey  String
-  isActive    Boolean  @default(true)
+  id            String   @id @default(uuid())
+  name          String
+  description   String?  @db.Text
+  details       String?  @db.Text
+  category      String   @default("Software")
+  videoUrl      String?
+  price         Decimal  @db.Decimal(10, 2)
+  storageKey    String
+  isActive      Boolean  @default(true)
   
-  orderItems  OrderItem[] 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  orderItems    OrderItem[] 
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("products")
-}
-
-enum OrderStatus {
-  PENDING
-  PAID
-  FAILED
 }
