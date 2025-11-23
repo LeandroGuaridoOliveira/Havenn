@@ -33,7 +33,7 @@ export class OrdersService {
     const uniqueKey = priceString + orderId.substring(0, 4);
     const expirationTime = Date.now() + 24 * 60 * 60 * 1000;
 
-    return `http://localhost:3000/download/secure/${productId}?key=${uniqueKey}&expires=${expirationTime}`;
+    return `http://localhost:3333/download/secure/${productId}?key=${uniqueKey}&expires=${expirationTime}`;
   }
 
   // =========================================================================

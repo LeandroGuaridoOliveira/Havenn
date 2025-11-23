@@ -12,7 +12,8 @@ async function bootstrap() {
 
   app.enableCors();
 
-  // Mude para a porta 3002
-  await app.listen(3000);
+  // Mude para a porta 3333
+  await app.listen(3333);
 }
+
 bootstrap();
