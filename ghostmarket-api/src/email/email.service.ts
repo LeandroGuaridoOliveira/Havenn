@@ -9,14 +9,20 @@ export class EmailService {
 
   constructor(private configService: ConfigService) {
     // Configuração do Nodemailer usando variáveis de ambiente
-    this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('EMAIL_HOST'),
-      port: this.configService.get<number>('EMAIL_PORT'),
-      secure: this.configService.get<boolean>('EMAIL_SECURE'),
-      auth: {
-        user: this.configService.get<string>('EMAIL_USER'),
-        pass: this.configService.get<string>('EMAIL_PASS'),
-      },
+        this.transporter = nodemailer.createTransport({
+        host: this.configService.get<string>('EMAIL_HOST'),
+        port: this.configService.get<number>('EMAIL_PORT'),
+        secure: this.configService.get<boolean>('EMAIL_SECURE'), // Manter o que está no .env
+        auth: {
+            user: this.configService.get<string>('EMAIL_USER'),
+            pass: this.configService.get<string>('EMAIL_PASS'),
+        },
+    tls: {
+      // Ignora erros de certificado (NECESSÁRIO para Ethereal e testes)
+      rejectUnauthorized: false, 
+      // Opcional: tentar forçar um protocolo mais antigo para compatibilidade
+      ciphers: 'SSLv3' 
+    }
     });
   }
 
