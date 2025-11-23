@@ -1,62 +1,86 @@
+// src/app/checkout/review/page.tsx
 "use client";
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '../../store/cart-store';
-import { Mail, ArrowRight, CreditCard, ShoppingCart, Loader2, Zap } from 'lucide-react';
+import { Mail, ArrowRight, CreditCard, ShoppingCart, Loader2, Zap, Lock, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 
+// Helper para formatação de moeda (ajuste o caminho se necessário)
+const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }).format(amount);
+};
+
+// =========================================================================
+// Tipos de Pagamento
+type PaymentMethod = 'credit_card' | 'pix';
+// =========================================================================
+
 export default function CheckoutReviewPage() {
-    // Leitura do estado global
-    const { items, total, clearCart, toggleCart } = useCartStore();
+    const { items, total, clearCart } = useCartStore();
     const router = useRouter();
     
-    // Estado local da página
+    // ESTADOS: Adicionamos o método de pagamento
     const [customerEmail, setCustomerEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    
-    // 1. Redireciona se o carrinho estiver vazio (Checagem de segurança)
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('credit_card'); // Padrão: Cartão
+
+    // Campos do Cartão (Simulação)
+    const [cardData, setCardData] = useState({
+        number: '', name: '', expiry: '', cvc: ''
+    });
+
+
+    // Redireciona se o carrinho estiver vazio
     useEffect(() => {
         if (items.length === 0 && !isLoading) {
             router.push('/');
         }
     }, [items.length, isLoading, router]);
 
-    // 2. Função de Pagamento Final (Chama a API POST /orders)
+
+    // =========================================================================
+    // FUNÇÃO DE PAGAMENTO FINAL
+    // =========================================================================
     const handleFinalizePurchase = async (e: FormEvent) => {
         e.preventDefault();
         
-        // Validação de E-mail
+        // Validação básica do e-mail
         if (!customerEmail || !customerEmail.includes('@') || !customerEmail.includes('.')) {
             alert('Por favor, insira um e-mail válido para a entrega.');
             return;
         }
 
+        // Validação do Método de Pagamento (Se for cartão, valida os campos)
+        if (paymentMethod === 'credit_card' && (!cardData.number || !cardData.name || !cardData.cvc)) {
+            alert('Preencha todos os dados do cartão (simulado).');
+            return;
+        }
+        
         setIsLoading(true);
         
-        // Prepara a chamada de API
         const token = document.cookie.split('; ').find(row => row.startsWith('havenn_token='))?.split('=')[1];
         
         const orderData = {
             items: items.map(i => ({ id: i.id, price: i.price })),
             total: total,
             customerEmail: customerEmail,
+            paymentMethod: paymentMethod, // Envia o método escolhido para o Backend
+            // Aqui entraria a chamada ao Stripe para gerar a sessão...
         };
 
         try {
+            // Chamada à API de criação de pedido (Backend)
             const res = await fetch("http://localhost:3000/orders", {
                 method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    // Envia o token para autenticar no backend
-                    "Authorization": `Bearer ${token}`, 
-                },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
                 body: JSON.stringify(orderData),
             });
 
             if (res.ok) {
                 const data = await res.json();
                 clearCart();
-                // 3. Sucesso: Redireciona para a tela de sucesso (entrega do produto)
+                // Redireciona para sucesso (Entrega do produto)
                 router.push(`/checkout/success/${data.id}`); 
             } else {
                 alert(`Falha ao processar o pedido. Status: ${res.status}.`);
@@ -70,42 +94,86 @@ export default function CheckoutReviewPage() {
 
     if (items.length === 0) return null;
 
+    // Estilos de Input
+    const inputClass = "w-full px-4 py-3 bg-white/[0.05] border border-white/[0.1] rounded-lg focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 text-white placeholder-zinc-500 transition duration-150 ease-in-out";
+    const selectedMethodClass = "bg-indigo-600/20 ring-2 ring-indigo-500/70 border-indigo-500/50";
+    const unselectedMethodClass = "bg-zinc-900 hover:bg-zinc-800 border-white/10";
+    
     return (
         <div className="min-h-screen bg-[#09090b] text-zinc-200 p-8 py-20">
             <div className='max-w-4xl mx-auto'>
-                <h1 className="text-3xl font-bold text-white tracking-tight mb-8">
-                    Finalizar Compra
-                </h1>
+                <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-8">
+                    <h1 className="text-3xl font-bold text-white tracking-tight">
+                        Checkout Havenn
+                    </h1>
+                    <Link href="/" className="text-sm text-zinc-400 hover:text-white transition">Voltar à Loja</Link>
+                </div>
 
                 <div className="grid md:grid-cols-3 gap-8">
                     
-                    {/* Coluna 1: Formulário de Contato e Pagamento */}
+                    {/* Coluna 1: Dados de Contato e Pagamento */}
                     <div className="md:col-span-2 space-y-6">
-                        <div className="bg-zinc-900/50 border border-white/10 p-6 rounded-xl space-y-6">
-                            <h2 className="text-xl font-semibold text-white border-b border-white/5 pb-3">1. Dados de Entrega</h2>
+                        <div className="bg-zinc-900/50 border border-white/10 p-8 rounded-xl shadow-lg space-y-8">
                             
-                            <form onSubmit={handleFinalizePurchase} className="space-y-4">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest block">E-mail de Entrega</label>
-                                <div className='flex items-center gap-3'>
-                                    <Mail size={20} className='text-indigo-400' />
-                                    <input
-                                        type="email"
-                                        required
-                                        placeholder="Seu e-mail para receber o produto"
-                                        value={customerEmail}
-                                        onChange={(e) => setCustomerEmail(e.target.value)}
-                                        className="w-full bg-transparent border-b border-white/[0.1] pb-2 text-white outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600"
-                                    />
+                            {/* 1. Dados de Entrega */}
+                            <h2 className="text-xl font-semibold text-white border-b border-white/5 pb-3 flex items-center gap-2"><Mail size={20} className='text-emerald-400' /> E-mail de Entrega</h2>
+                            
+                            <input
+                                type="email"
+                                required
+                                placeholder="Seu e-mail para receber a chave de licença"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                className={inputClass}
+                            />
+                            
+                            {/* 2. Método de Pagamento */}
+                            <h2 className="text-xl font-semibold text-white border-b border-white/5 pt-6 pb-3 flex items-center gap-2"><CreditCard size={20} className='text-yellow-400' /> Escolha o Método</h2>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* OPÇÃO CARTÃO */}
+                                <div
+                                    onClick={() => setPaymentMethod('credit_card')}
+                                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${paymentMethod === 'credit_card' ? selectedMethodClass : unselectedMethodClass}`}
+                                >
+                                    <h3 className="font-semibold flex items-center gap-2 text-white"><CreditCard size={18} className='text-indigo-400' /> Cartão de Crédito</h3>
+                                    <p className="text-xs text-zinc-400 mt-1">Processado pelo Stripe.</p>
                                 </div>
-
-                                <h2 className="text-xl font-semibold text-white border-b border-white/5 pt-6 pb-3">2. Método de Pagamento</h2>
                                 
-                                {/* Placeholder de Pagamento */}
-                                <div className='bg-white/[0.05] p-4 rounded-lg flex items-center gap-3 border border-indigo-500/50 cursor-pointer'>
-                                    <CreditCard size={20} className='text-emerald-400' />
-                                    <span className='font-medium text-white'>PIX / Cartão de Crédito (Gateway Stripe Test)</span>
+                                {/* OPÇÃO PIX */}
+                                <div
+                                    onClick={() => setPaymentMethod('pix')}
+                                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${paymentMethod === 'pix' ? selectedMethodClass : unselectedMethodClass}`}
+                                >
+                                    <h3 className="font-semibold flex items-center gap-2 text-white"><DollarSign size={18} className='text-emerald-400' /> PIX (Pagamento Instantâneo)</h3>
+                                    <p className="text-xs text-zinc-400 mt-1">Entrega mais rápida.</p>
                                 </div>
+                            </div>
 
+                            {/* CAMPOS CONDICIONAIS */}
+                            <form onSubmit={handleFinalizePurchase}>
+                                {paymentMethod === 'credit_card' && (
+                                    <div className="mt-6 space-y-4 pt-4 border-t border-white/5">
+                                        <h3 className="text-lg font-medium text-white flex items-center gap-2"><Lock size={16} /> Dados do Cartão (Simulação)</h3>
+                                        
+                                        <input type="text" placeholder="Número do Cartão" required value={cardData.number} onChange={(e) => setCardData({...cardData, number: e.target.value})} className={inputClass} />
+                                        <input type="text" placeholder="Nome Impresso no Cartão" required value={cardData.name} onChange={(e) => setCardData({...cardData, name: e.target.value})} className={inputClass} />
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <input type="text" placeholder="MM/AA" required value={cardData.expiry} onChange={(e) => setCardData({...cardData, expiry: e.target.value})} className={inputClass} />
+                                            <input type="text" placeholder="CVC" required value={cardData.cvc} onChange={(e) => setCardData({...cardData, cvc: e.target.value})} className={inputClass} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {paymentMethod === 'pix' && (
+                                    <div className="mt-6 space-y-4 pt-4 border-t border-white/5 text-center p-4 bg-white/[0.05] rounded-xl">
+                                        <Zap size={32} className="text-yellow-400 mx-auto mb-2" />
+                                        <p className="text-white font-medium">Você será redirecionado para a tela de geração do QR Code Pix após a confirmação.</p>
+                                    </div>
+                                )}
+
+                                {/* BOTÃO FINAL */}
                                 <button
                                     type="submit"
                                     disabled={isLoading || !customerEmail}
@@ -115,7 +183,7 @@ export default function CheckoutReviewPage() {
                                         : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/30'
                                     }`}
                                 >
-                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Pagar R$ {total.toFixed(2)} e Receber Produto</>}
+                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Confirmar e Pagar {formatCurrency(total)}</>}
                                 </button>
                             </form>
                         </div>
@@ -132,18 +200,18 @@ export default function CheckoutReviewPage() {
                             {items.map(item => (
                                 <div key={item.id} className="flex justify-between items-center text-sm">
                                     <span className="text-zinc-400 line-clamp-1">{item.name}</span>
-                                    <span className='font-medium text-white'>R$ {item.price.toFixed(2)}</span>
+                                    <span className='font-medium text-white'>{formatCurrency(item.price)}</span>
                                 </div>
                             ))}
                             
                             {/* Total */}
                             <div className="flex justify-between items-center pt-4 border-t border-white/5 text-xl font-bold">
                                 <span>Total</span>
-                                <span className='text-indigo-400'>R$ {total.toFixed(2)}</span>
+                                <span className='text-indigo-400'>{formatCurrency(total)}</span>
                             </div>
                         </div>
                         <p className='text-xs text-zinc-500 mt-4 px-2'>
-                            Ao clicar em Pagar, você concorda com nossos Termos de Serviço.
+                            A chave de licença é gerada após a confirmação do pagamento.
                         </p>
                     </div>
                 </div>

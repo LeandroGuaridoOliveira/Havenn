@@ -1,11 +1,10 @@
 // Importar módulos necessários para criptografia e hash
 import * as crypto from 'crypto'; 
 import * as bcrypt from 'bcrypt'; 
-
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { OrderStatus } from '@prisma/client'; 
-import { EmailService } from '../email/email.service';
+import { EmailService } from '../email/email.service'; 
 import { CreateOrderDto } from './dto/create-order.dto'; 
 
 @Injectable()
@@ -14,14 +13,13 @@ export class OrdersService {
 
   constructor(
     private prisma: PrismaService, 
-    private emailService: EmailService
+    private emailService: EmailService // <-- O serviço injetado
   ) {}
 
   // =========================================================================
   // MÉTODOS AUXILIARES E PRIVADOS
   // =========================================================================
 
-  // MOCK: Simula a transição de PENDING para PAID (usada no create)
   private async handlePaymentSuccess(orderId: string) {
     this.logger.log(`Simulando webhook: Pedido ${orderId} atualizado para PAID.`);
     return this.prisma.order.update({
@@ -30,7 +28,6 @@ export class OrdersService {
     });
   }
 
-  // MÉTODO AUXILIAR: Gera o link de download temporário
   private getSecureDownloadUrl(orderId: string, productId: string, itemPrice: any): string {
     const priceString = itemPrice.toString(); 
     const uniqueKey = priceString + orderId.substring(0, 4);
@@ -40,19 +37,20 @@ export class OrdersService {
   }
   
   // =========================================================================
-  // 1. CRIAÇÃO DE PEDIDO (POST /orders) - FUNÇÃO ÚNICA E CORRETA
+  // 1. CRIAÇÃO DE PEDIDO (POST /orders)
   // =========================================================================
 
   async create(createOrderDto: CreateOrderDto) {
     const { items, total, customerEmail } = createOrderDto; 
     
-    // 1. GERAÇÃO DA CHAVE DE LICENÇA ÚNICA
+    // GERAÇÃO DA CHAVE DE LICENÇA ÚNICA (Anti-Pirataria)
     const licenseKey = crypto.randomUUID(); 
 
-    // 2. ENCONTRA OU CRIA O USUÁRIO (PRÉ-REQUISITO PARA O FK)
+    // 1. Encontrar ou Criar Usuário (Para vincular o pedido ao FK)
     let user = await this.prisma.user.findUnique({ where: { email: customerEmail } });
 
     if (!user) {
+        // Cria usuário se não existir
         const tempPassword = crypto.randomBytes(8).toString('hex');
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
         
@@ -66,19 +64,18 @@ export class OrdersService {
         this.logger.log(`Novo usuário CUSTOMER criado: ${user.email}`);
     }
 
-
     const orderItemsData = items.map((item) => ({
       productId: item.id,
       price: item.price,
     }));
     
-    // 3. CRIAÇÃO DA ORDEM COM FK E LICENÇA
+    // 2. CRIAÇÃO DA ORDEM COM FK E LICENÇA
     const order = await this.prisma.order.create({
       data: {
         totalAmount: total,
-        customerEmail: customerEmail, // E-mail usado
+        customerEmail: customerEmail,
         userId: user.id, // VÍNCULO AO FK
-        licenseKey: licenseKey, 
+        licenseKey: licenseKey, // SALVANDO A CHAVE
         status: OrderStatus.PENDING, 
         items: {
           create: orderItemsData,
@@ -87,7 +84,7 @@ export class OrdersService {
       include: { items: { include: { product: true } } },
     });
     
-    // --- MOCK DE ENTREGA E ENVIO DE E-MAIL ---
+    // 3. MOCK DE ENTREGA E ENVIO DE E-MAIL
     if (order.status === OrderStatus.PENDING) {
         await this.handlePaymentSuccess(order.id); 
         
@@ -106,13 +103,13 @@ export class OrdersService {
                 firstItem.price 
             );
             
-            // CORREÇÃO: Usa || 'N/A' para resolver o erro de tipagem string | null
+            // CHAMA O SERVIÇO DE E-MAIL COM A CHAVE FINAL
             await this.emailService.sendDownloadLink(
                 completedOrder.customerEmail || 'admin@havenn.com',
                 downloadLink, 
                 completedOrder.id,
                 productTitle,
-                completedOrder.licenseKey || 'N/A' // FINAL FIX: Garante que o argumento é string
+                completedOrder.licenseKey || 'N/A' // Fallback de tipagem
             );
         }
     }
@@ -121,7 +118,7 @@ export class OrdersService {
   }
 
   // =========================================================================
-  // 2. BUSCA POR E-MAIL (Dashboard do Cliente)
+  // 4. MÉTODOS DE BUSCA E CRUD
   // =========================================================================
 
   async findOrdersByEmail(email: string) {
@@ -131,10 +128,6 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
     });
   }
-
-  // =========================================================================
-  // 3. GERAÇÃO DE DOWNLOAD (Rota Protegida)
-  // =========================================================================
 
   async generateDownloadLink(orderId: string, productId: string) {
     const order = await this.prisma.order.findUnique({
@@ -154,10 +147,6 @@ export class OrdersService {
       fileName: `Havenn_Asset_${productId.substring(0, 8)}.zip`
     };
   }
-
-  // =========================================================================
-  // 4. MÉTODOS CRUD PADRÃO
-  // =========================================================================
 
   async findAll() {
     return this.prisma.order.findMany({
