@@ -22,6 +22,16 @@ enum OrderStatus {
   FAILED
 }
 
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  ADMIN_ACCESS
+  PRODUCT_CREATED
+  TOKEN_EXPIRED
+  UNAUTHORIZED_ACCESS
+}
+
 // =========================================================================
 // MODELS
 // =========================================================================
@@ -34,6 +44,9 @@ model User {
   
   // RELAÇÃO INVERSA: Um usuário pode ter muitos pedidos (necessário para o Dashboard)
   orders        Order[] 
+  
+  // RELAÇÃO INVERSA: Registro de auditoria do usuário
+  auditLogs     AuditLog[]
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -93,4 +106,28 @@ model Product {
   updatedAt     DateTime @updatedAt
 
   @@map("products")
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  
+  // User who performed the action (nullable for failed logins)
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+  
+  // Action type
+  action      AuditAction
+  
+  // Additional context
+  email       String?     // Email attempted (useful for failed logins)
+  ipAddress   String?     // IP address of request
+  userAgent   String?     // Browser/client information
+  details     String?     @db.Text // Additional JSON or text details
+  
+  createdAt   DateTime    @default(now())
+
+  @@map("audit_logs")
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }

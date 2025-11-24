@@ -17,30 +17,18 @@ interface DashboardStats {
 
 export default function AdminPage() {
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products'>('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
 
-  // --- AUTH CHECK ---
-  useEffect(() => {
-    const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('havenn_token='));
-
-    if (!token) {
-      router.push('/login');
-    } else {
-      setIsAuthorized(true);
-    }
-  }, [router]);
+  // Auth is now handled by server-side middleware in middleware.ts
 
   // --- FETCH STATS ---
   useEffect(() => {
-    if (activeTab === 'dashboard' && isAuthorized) {
+    if (activeTab === 'dashboard') {
       fetchStats();
     }
-  }, [activeTab, isAuthorized]);
+  }, [activeTab]);
 
   async function fetchStats() {
     setLoadingStats(true);
@@ -114,9 +102,12 @@ export default function AdminPage() {
         (document.getElementById('fileInput') as HTMLInputElement).value = "";
         (document.getElementById('imageInput') as HTMLInputElement).value = "";
       } else {
-        setStatus({ type: 'error', msg: "Erro ao cadastrar produto na API." });
+        const errorData = await res.json();
+        console.error("Erro API:", errorData);
+        setStatus({ type: 'error', msg: `Erro ao cadastrar: ${errorData.message || 'Erro desconhecido'}` });
       }
     } catch (error) {
+      console.error("Erro de conexão:", error);
       setStatus({ type: 'error', msg: "Erro de conexão com o servidor." });
     }
   }
@@ -126,14 +117,11 @@ export default function AdminPage() {
     router.push('/login');
   }
 
-  if (!isAuthorized) return null;
-
   const labelClass = "block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 ml-1";
   const inputClass = "w-full bg-[#0c0c0e] border border-zinc-800 rounded-xl p-3 text-zinc-200 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all placeholder:text-zinc-700 text-sm";
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-200 selection:bg-indigo-500/30 pb-20">
-
       {/* Navbar Admin */}
       <nav className="border-b border-white/[0.05] bg-black/20 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -174,7 +162,6 @@ export default function AdminPage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-6 pt-12">
-
         {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

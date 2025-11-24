@@ -1,68 +1,79 @@
-import { Controller, Get, Param, Query, Res, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Query,
+    Res,
+    HttpException,
+    HttpStatus,
+    StreamableFile
+} from '@nestjs/common';
 import type { Response } from 'express';
+import { DownloadService } from './download.service';
 import * as path from 'path';
 import * as fs from 'fs';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Importar a guarda
-
-// A rota no Frontend é: GET /download/secure/:productId?key=...
+import { createReadStream } from 'fs';
 
 @Controller('download')
 export class DownloadController {
+    constructor(private readonly downloadService: DownloadService) { }
 
-    // Rota completa: /download/secure/ID_PRODUTO
-    // NOTA: A rota de download não precisa do token JWT, ela precisa da KEY TEMPORÁRIA
+    /**
+     * Secure download endpoint
+     * Route: GET /download/secure/:productId?token=...
+     * 
+     * This endpoint validates the encrypted token and streams the file
+     * without exposing the actual file path to the client
+     */
     @Get('secure/:productId')
-    handleDownload(
-        @Param('productId') productId: string,
-        @Query('key') key: string,
-        @Query('expires') expires: string,
-        @Res() res: Response // Injeta o objeto de resposta nativo do Express
+    async handleDownload(
+        @Query('token') token: string,
+        @Res({ passthrough: true }) res: Response,
     ) {
-        // 1. CHECAGEM BÁSICA DE SEGURANÇA (VALIDAÇÃO DA CHAVE)
-        // No Service de Orders, a chave foi gerada assim: uniqueKey = item.price.toString() + orderId.substring(0, 4);
-        // Para um teste funcional, vamos garantir que a chave e a data existem.
-
-        // Simplificando a segurança para fins de teste:
-        const expirationTime = parseInt(expires, 10);
-
-        if (!key || !expires || expirationTime < Date.now()) {
-            throw new HttpException('Link de download expirado ou inválido.', HttpStatus.UNAUTHORIZED);
+        // 1. Validate token is provided
+        if (!token) {
+            throw new HttpException(
+                'Token de download não fornecido.',
+                HttpStatus.BAD_REQUEST,
+            );
         }
 
-        // 2. ENCONTRAR O NOME REAL DO ARQUIVO NO DISCO
-        // Em produção, isso viria do banco, mas aqui assumimos que o ProductId está ligado ao nome.
-        // Como usamos o Multer (armazenamento local) anteriormente, os nomes dos arquivos são UUIDs longos.
+        // 2. Validate and decode token
+        const payload = await this.downloadService.validateToken(token);
 
-        // A rota de download seguro só pode ser testada se você tiver um arquivo na pasta /uploads.
+        // 3. Retrieve file metadata from database with access validation
+        const { storageKey, productName } = await this.downloadService.getFileMetadata(
+            payload.orderId,
+            payload.productId,
+        );
 
-        // ******* SIMULAÇÃO DE BUSCA DO NOME DO ARQUIVO REAL *******
-        // Para fechar o ciclo agora, vamos procurar pelo arquivo mais recente na pasta uploads
-
+        // 4. Construct file path (never exposed to client)
         const uploadsDir = path.join(process.cwd(), 'uploads');
+        const filePath = path.join(uploadsDir, storageKey);
 
-        // Nota: Esta parte é puramente para DEMONSTRAÇÃO. O método correto seria buscar 
-        // o 'storageKey' no banco usando o 'productId' e um Service dedicado.
-
-        // Para o teste, vamos usar o arquivo mais recente que o Admin subiu (ou um mock file)
-        let filename = '';
-        try {
-            const files = fs.readdirSync(uploadsDir);
-            // O primeiro arquivo que não for oculto é o nosso mock
-            filename = files.find(f => !f.startsWith('.')) || 'Havenn_Asset_1a7c3d29.zip'; // Fallback
-        } catch (e) {
-            throw new HttpException('Pasta de uploads inacessível. O Backend não pode entregar o arquivo.', HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-
-        // 3. CONSTRUÇÃO DO CAMINHO COMPLETO
-        const filePath = path.join(uploadsDir, filename);
-
-        // 4. VERIFICAR EXISTÊNCIA E ENVIAR
+        // 5. Verify file exists on disk
         if (!fs.existsSync(filePath)) {
-            // Se o produto foi criado sem upload real, ele vai cair aqui.
-            throw new HttpException(`Arquivo '${filename}' não encontrado no servidor. (O upload real falhou ou foi simulado)`, HttpStatus.NOT_FOUND);
+            throw new HttpException(
+                `Arquivo não encontrado no servidor. Entre em contato com o suporte.`,
+                HttpStatus.NOT_FOUND,
+            );
         }
 
-        // Enviar o arquivo. O 'res.sendFile' usa o Express para entregar o arquivo ao cliente.
-        return res.sendFile(filename, { root: uploadsDir });
+        // 6. Get file stats for headers
+        const fileStats = fs.statSync(filePath);
+
+        // 7. Set response headers for download
+        res.set({
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename="${productName}.zip"`,
+            'Content-Length': fileStats.size,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+        });
+
+        // 8. Stream file to client (secure, memory-efficient)
+        const fileStream = createReadStream(filePath);
+
+        return new StreamableFile(fileStream);
     }
 }

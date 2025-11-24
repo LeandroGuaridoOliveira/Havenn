@@ -66,14 +66,35 @@ export default function CheckoutReviewPage() {
     const [agreedToTerms, setAgreedToTerms] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
 
-    // Redirect if cart is empty
+    // Redirect if cart is empty, but NOT if we just successfully purchased
     useEffect(() => {
-        if (items.length === 0 && !isLoading) {
+        if (items.length === 0 && !isLoading && !isSuccess) {
             router.push('/');
         }
-    }, [items.length, isLoading, router]);
+    }, [items.length, isLoading, router, isSuccess]);
+
+    // =========================================================================
+    // TEST HELPER
+    // =========================================================================
+    const fillTestData = () => {
+        setCustomerEmail('lele.guarido@gmail.com');
+        setBillingAddress({
+            address: 'Rua de Teste, 123',
+            city: 'São Paulo',
+            zip: '01000-000',
+            country: 'BR'
+        });
+        setCardData({
+            number: '4242 4242 4242 4242',
+            name: 'TESTE USER',
+            expiry: '12/30',
+            cvc: '123'
+        });
+        setAgreedToTerms(true);
+    };
 
     // =========================================================================
     // VALIDATION
@@ -116,10 +137,16 @@ export default function CheckoutReviewPage() {
     // =========================================================================
     // SUBMIT HANDLER
     // =========================================================================
-    const handleFinalizePurchase = async (e: FormEvent) => {
-        e.preventDefault();
+    const handleFinalizePurchase = async (e: any) => {
+        e.preventDefault && e.preventDefault();
+        console.log("handleFinalizePurchase called");
+        alert("Iniciando processamento do pedido..."); // Debug alert
 
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            console.log("Validation failed", errors);
+            alert("Validação falhou! Verifique os campos em vermelho.");
+            return;
+        }
 
         setIsLoading(true);
 
@@ -129,8 +156,7 @@ export default function CheckoutReviewPage() {
             items: items.map(i => ({ id: i.id, price: i.price })),
             total: total,
             customerEmail: customerEmail,
-            paymentMethod: paymentMethod,
-            billingAddress: billingAddress,
+            // Removed extra fields to match Backend DTO and avoid 400 Bad Request
         };
 
         try {
@@ -145,12 +171,14 @@ export default function CheckoutReviewPage() {
 
             if (res.ok) {
                 const data = await res.json();
+                setIsSuccess(true); // Prevent redirect to home
                 clearCart();
                 router.push(`/checkout/success/${data.id}`);
             } else {
                 alert(`Falha ao processar o pedido. Status: ${res.status}.`);
             }
         } catch (error) {
+            console.error("Payment error:", error);
             alert("Erro de conexão com a API.");
         } finally {
             setIsLoading(false);
@@ -197,10 +225,18 @@ export default function CheckoutReviewPage() {
                         </div>
                     </div>
 
-                    {/* TEST MODE BADGE */}
-                    <div className="bg-yellow-500/10 border border-yellow-500/20 px-4 py-2 rounded-full flex items-center gap-2">
-                        <Info size={16} className="text-yellow-500" />
-                        <span className="text-xs font-semibold text-yellow-500 uppercase tracking-wider">Modo de Teste</span>
+                    {/* TEST MODE BADGE & FILL DATA BUTTON */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={fillTestData}
+                            className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors underline"
+                        >
+                            Preencher Dados de Teste
+                        </button>
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 px-4 py-2 rounded-full flex items-center gap-2">
+                            <Info size={16} className="text-yellow-500" />
+                            <span className="text-xs font-semibold text-yellow-500 uppercase tracking-wider">Modo de Teste</span>
+                        </div>
                     </div>
                 </div>
 
@@ -209,7 +245,7 @@ export default function CheckoutReviewPage() {
                     {/* LEFT COLUMN - FORMS */}
                     <div className="lg:col-span-8 space-y-8">
 
-                        <form onSubmit={handleFinalizePurchase} className="space-y-8">
+                        <form className="space-y-8">
 
                             {/* SECTION 1: CONTACT */}
                             <section className="bg-zinc-900/30 border border-white/5 rounded-2xl p-6 md:p-8 relative overflow-hidden group">
@@ -409,7 +445,8 @@ export default function CheckoutReviewPage() {
 
                             {/* SUBMIT BUTTON */}
                             <button
-                                type="submit"
+                                type="button"
+                                onClick={handleFinalizePurchase}
                                 disabled={isLoading}
                                 className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${isLoading
                                     ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none translate-y-0'

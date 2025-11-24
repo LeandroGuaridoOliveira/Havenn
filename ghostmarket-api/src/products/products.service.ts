@@ -11,30 +11,35 @@ export class ProductsService {
 
   async create(createProductDto: CreateProductDto, files: { file?: any[], image?: any[] }) {
     const uploadDir = path.join(process.cwd(), 'uploads');
+    const filesDir = path.join(uploadDir, 'files');
+    const imagesDir = path.join(uploadDir, 'images');
 
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    if (!fs.existsSync(filesDir)) {
+      fs.mkdirSync(filesDir, { recursive: true });
+    }
+    if (!fs.existsSync(imagesDir)) {
+      fs.mkdirSync(imagesDir, { recursive: true });
     }
 
     let storageKey = 'default-file.zip';
     let imageUrl: string | null = null;
 
-    // Salva o arquivo do produto
+    // Salva o arquivo do produto (Privado)
     if (files.file && files.file[0]) {
       const productFile = files.file[0];
       const fileName = `${Date.now()}-${productFile.originalname}`;
-      const filePath = path.join(uploadDir, fileName);
+      const filePath = path.join(filesDir, fileName);
       fs.writeFileSync(filePath, productFile.buffer);
       storageKey = fileName;
     }
 
-    // Salva a imagem do produto
+    // Salva a imagem do produto (Público)
     if (files.image && files.image[0]) {
       const imageFile = files.image[0];
       const imageName = `img-${Date.now()}-${imageFile.originalname}`;
-      const imagePath = path.join(uploadDir, imageName);
+      const imagePath = path.join(imagesDir, imageName);
       fs.writeFileSync(imagePath, imageFile.buffer);
-      imageUrl = `/uploads/${imageName}`; // Caminho relativo para servir estático
+      imageUrl = `/uploads/images/${imageName}`; // Caminho público
     }
 
     return await this.prisma.product.create({

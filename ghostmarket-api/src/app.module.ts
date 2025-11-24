@@ -8,20 +8,28 @@ import { OrdersModule } from './orders/orders.module';
 import { DownloadModule } from './download/download.module';
 import { ConfigModule } from '@nestjs/config';
 import { EmailModule } from './email/email.module';
+import { StorageModule } from './storage/storage.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
     // Configura o ConfigModule para carregar o .env e ser global
     ConfigModule.forRoot({
-      isGlobal: true, 
+      isGlobal: true,
     }),
     ProductsModule,
     AuthModule,
     OrdersModule,
     DownloadModule,
-    EmailModule, // <--- Adicionar EmailModule
+    EmailModule,
+    StorageModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads', 'images'),
+      serveRoot: '/uploads/images',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
-export class AppModule {}
+export class AppModule { }

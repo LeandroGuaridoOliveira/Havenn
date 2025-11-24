@@ -1,10 +1,35 @@
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsUrl } from 'class-validator';
+
 export class CreateProductDto {
+  @IsNotEmpty()
+  @IsString()
   name: string;
+
+  @IsNotEmpty()
+  @IsString()
   description: string;
-  details?: string;   // Opcional
-  category?: string;  // Opcional
-  videoUrl?: string;  // Opcional
+
+  @IsOptional()
+  @IsString()
+  details?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsUrl()
+  videoUrl?: string;
+
+  @IsNotEmpty()
+  @IsNumber()
   price: number;
-  storageKey: string;
+
+  @IsOptional()
+  @IsString()
+  storageKey?: string;
+
+  @IsOptional()
+  @IsUrl()
   imageUrl?: string;
 }

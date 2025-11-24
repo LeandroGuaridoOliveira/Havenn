@@ -5,6 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { OrderStatus } from '@prisma/client';
 import { EmailService } from '../email/email.service';
+import { DownloadService } from '../download/download.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
@@ -13,7 +14,8 @@ export class OrdersService {
 
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService // <-- O serviço injetado
+    private emailService: EmailService,
+    private downloadService: DownloadService // <-- Secure download token service
   ) { }
 
   // =========================================================================
@@ -28,12 +30,13 @@ export class OrdersService {
     });
   }
 
-  private getSecureDownloadUrl(orderId: string, productId: string, itemPrice: any): string {
-    const priceString = itemPrice.toString();
-    const uniqueKey = priceString + orderId.substring(0, 4);
-    const expirationTime = Date.now() + 24 * 60 * 60 * 1000;
-
-    return `http://localhost:3333/download/secure/${productId}?key=${uniqueKey}&expires=${expirationTime}`;
+  /**
+   * Generate secure download URL with encrypted token
+   * SECURITY: Replaced insecure key concatenation with HMAC-signed tokens
+   */
+  private getSecureDownloadUrl(orderId: string, productId: string): string {
+    const token = this.downloadService.generateToken(orderId, productId);
+    return `http://localhost:3333/download/secure/${productId}?token=${token}`;
   }
 
   // =========================================================================
@@ -97,10 +100,10 @@ export class OrdersService {
         const firstItem = completedOrder.items[0];
         const productTitle = firstItem.product.name;
 
+        // SECURITY: Using encrypted token instead of predictable key
         const downloadLink = this.getSecureDownloadUrl(
           completedOrder.id,
-          firstItem.product.id,
-          firstItem.price
+          firstItem.product.id
         );
 
         // CHAMA O SERVIÇO DE E-MAIL COM A CHAVE FINAL
@@ -129,6 +132,10 @@ export class OrdersService {
     });
   }
 
+  /**
+   * Generate secure download link with encrypted token
+   * SECURITY: Replaced insecure key validation with cryptographic tokens
+   */
   async generateDownloadLink(orderId: string, productId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -140,7 +147,8 @@ export class OrdersService {
     const item = order.items.find(i => i.productId === productId);
     if (!item) throw new Error('Produto não faz parte deste pedido.');
 
-    const downloadUrl = this.getSecureDownloadUrl(orderId, productId, item.price);
+    // SECURITY: Generate encrypted token with HMAC signature
+    const downloadUrl = this.getSecureDownloadUrl(orderId, productId);
 
     return {
       downloadUrl: downloadUrl,
