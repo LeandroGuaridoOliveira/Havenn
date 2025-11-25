@@ -34,5 +34,5 @@ export function middleware(request: NextRequest) {
  * Protects all /admin routes and their sub-paths
  */
 export const config = {
-    matcher: ['/admin', '/admin/:path*', '/checkout', '/checkout/:path*'],
+    matcher: ['/admin', '/admin/:path*', '/checkout', '/checkout/:path*', '/dashboard', '/dashboard/:path*', '/my-orders', '/my-orders/:path*'],
 };
