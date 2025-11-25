@@ -1,15 +1,13 @@
-// Importar módulos necessários para criptografia e hash
-import * as crypto from 'crypto';
-import * as bcrypt from 'bcrypt';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma.service';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { EmailService } from '../email/email.service';
 import { DownloadService } from '../download/download.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class OrdersService {
@@ -18,7 +16,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
-    private downloadService: DownloadService, // <-- Secure download token service
+    private downloadService: DownloadService,
     private configService: ConfigService,
     @InjectQueue('email') private emailQueue: Queue,
   ) { }
@@ -37,7 +35,6 @@ export class OrdersService {
 
   /**
    * Generate secure download URL with encrypted token
-   * SECURITY: Replaced insecure key concatenation with HMAC-signed tokens
    */
   private getSecureDownloadUrl(orderId: string, productId: string): string {
     const token = this.downloadService.generateToken(orderId, productId);
@@ -52,45 +49,52 @@ export class OrdersService {
   async create(createOrderDto: CreateOrderDto, userId: string) {
     const { items, customerEmail } = createOrderDto;
 
-    // GERAÇÃO DA CHAVE DE LICENÇA ÚNICA (Anti-Pirataria)
+    // GERAÇÃO DA CHAVE DE LICENÇA ÚNICA
     const licenseKey = crypto.randomUUID();
 
-    let calculatedTotal = 0;
+    // 1. Fetch all products at once (Fix N+1)
+    const productIds = items.map(item => item.productId);
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds } }
+    });
+
+    if (products.length !== productIds.length) {
+      throw new Error('Um ou mais produtos não foram encontrados.');
+    }
+
+    let calculatedTotal = new Prisma.Decimal(0);
     const orderItemsData: any[] = [];
 
-    // 2. SERVER-SIDE PRICE CALCULATION
+    // 2. SERVER-SIDE PRICE CALCULATION (Fix Monetary Math)
     for (const item of items) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: item.productId }
-      });
+      const product = products.find(p => p.id === item.productId);
+      if (!product) continue;
 
-      if (!product) {
-        throw new Error(`Produto com ID ${item.productId} não encontrado.`);
-      }
-
-      // Calculate item total
-      const itemTotal = Number(product.price) * item.quantity;
-      calculatedTotal += itemTotal;
+      // Use Decimal for precision: price * quantity
+      const itemTotal = product.price.mul(item.quantity);
+      calculatedTotal = calculatedTotal.add(itemTotal);
 
       orderItemsData.push({
         productId: product.id,
-        price: product.price, // Saving the snapshot of the REAL price from DB
+        price: product.price,
       });
     }
 
-    // 3. CRIAÇÃO DA ORDEM COM FK E LICENÇA
-    const order = await this.prisma.order.create({
-      data: {
-        totalAmount: calculatedTotal, // Using SERVER-SIDE calculated total
-        customerEmail: customerEmail,
-        userId: userId, // VÍNCULO AO FK (User Logado)
-        licenseKey: licenseKey, // SALVANDO A CHAVE
-        status: OrderStatus.PENDING,
-        items: {
-          create: orderItemsData,
+    // 3. CRIAÇÃO DA ORDEM COM FK E LICENÇA (Atomic Transaction)
+    const order = await this.prisma.$transaction(async (tx) => {
+      return tx.order.create({
+        data: {
+          totalAmount: calculatedTotal,
+          customerEmail: customerEmail,
+          userId: userId,
+          licenseKey: licenseKey,
+          status: OrderStatus.PENDING,
+          items: {
+            create: orderItemsData,
+          },
         },
-      },
-      include: { items: { include: { product: true } } },
+        include: { items: { include: { product: true } } },
+      });
     });
 
     // 4. MOCK DE ENTREGA E ENVIO DE E-MAIL
@@ -106,13 +110,11 @@ export class OrdersService {
         const firstItem = completedOrder.items[0];
         const productTitle = firstItem.product.name;
 
-        // SECURITY: Using encrypted token instead of predictable key
         const downloadLink = this.getSecureDownloadUrl(
           completedOrder.id,
           firstItem.product.id
         );
 
-        // CHAMA O SERVIÇO DE E-MAIL VIA FILA (ASSÍNCRONO)
         await this.emailQueue.add('send-link', {
           recipientEmail: completedOrder.customerEmail || 'admin@havenn.com',
           downloadLink,
@@ -148,10 +150,6 @@ export class OrdersService {
     });
   }
 
-  /**
-   * Generate secure download link with encrypted token
-   * SECURITY: Replaced insecure key validation with cryptographic tokens
-   */
   async generateDownloadLink(orderId: string, productId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -163,7 +161,6 @@ export class OrdersService {
     const item = order.items.find(i => i.productId === productId);
     if (!item) throw new Error('Produto não faz parte deste pedido.');
 
-    // SECURITY: Generate encrypted token with HMAC signature
     const downloadUrl = this.getSecureDownloadUrl(orderId, productId);
 
     return {
@@ -198,7 +195,6 @@ export class OrdersService {
   // =========================================================================
 
   async getDashboardStats() {
-    // 1. Total Revenue (Only PAID orders)
     const paidOrders = await this.prisma.order.findMany({
       where: { status: OrderStatus.PAID },
       select: { totalAmount: true }
@@ -206,10 +202,8 @@ export class OrdersService {
 
     const totalRevenue = paidOrders.reduce((acc, order) => acc + Number(order.totalAmount), 0);
 
-    // 2. Total Orders
     const totalOrders = await this.prisma.order.count();
 
-    // 3. Recent Orders (Last 5)
     const recentOrders = await this.prisma.order.findMany({
       take: 5,
       orderBy: { createdAt: 'desc' },
