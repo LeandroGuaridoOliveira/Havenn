@@ -43,29 +43,15 @@ export class OrdersService {
   // 1. CRIAÇÃO DE PEDIDO (POST /orders)
   // =========================================================================
 
-  async create(createOrderDto: CreateOrderDto) {
+  async create(createOrderDto: CreateOrderDto, userId: string) {
     const { items, total, customerEmail } = createOrderDto;
 
     // GERAÇÃO DA CHAVE DE LICENÇA ÚNICA (Anti-Pirataria)
     const licenseKey = crypto.randomUUID();
 
-    // 1. Encontrar ou Criar Usuário (Para vincular o pedido ao FK)
-    let user = await this.prisma.user.findUnique({ where: { email: customerEmail } });
-
-    if (!user) {
-      // Cria usuário se não existir
-      const tempPassword = crypto.randomBytes(8).toString('hex');
-      const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
-      user = await this.prisma.user.create({
-        data: {
-          email: customerEmail,
-          password: hashedPassword,
-          role: 'CUSTOMER',
-        }
-      });
-      this.logger.log(`Novo usuário CUSTOMER criado: ${user.email}`);
-    }
+    // 1. Validar Usuário (Opcional, pois o JWT já garante)
+    // const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    // if (!user) throw new Error('Usuário não encontrado.');
 
     const orderItemsData = items.map((item) => ({
       productId: item.id,
@@ -77,7 +63,7 @@ export class OrdersService {
       data: {
         totalAmount: total,
         customerEmail: customerEmail,
-        userId: user.id, // VÍNCULO AO FK
+        userId: userId, // VÍNCULO AO FK (User Logado)
         licenseKey: licenseKey, // SALVANDO A CHAVE
         status: OrderStatus.PENDING,
         items: {
@@ -127,6 +113,14 @@ export class OrdersService {
   async findOrdersByEmail(email: string) {
     return await this.prisma.order.findMany({
       where: { customerEmail: email },
+      include: { items: { include: { product: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findMyOrders(userId: string) {
+    return await this.prisma.order.findMany({
+      where: { userId: userId },
       include: { items: { include: { product: true } } },
       orderBy: { createdAt: 'desc' },
     });

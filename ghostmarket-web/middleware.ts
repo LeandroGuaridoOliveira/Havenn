@@ -19,7 +19,9 @@ export function middleware(request: NextRequest) {
 
     // If no token is found, redirect to login page
     if (!token) {
-        return NextResponse.redirect(new URL('/login', request.url));
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname);
+        return NextResponse.redirect(loginUrl);
     }
 
     // Token exists, allow the request to proceed
@@ -32,5 +34,5 @@ export function middleware(request: NextRequest) {
  * Protects all /admin routes and their sub-paths
  */
 export const config = {
-    matcher: ['/admin', '/admin/:path*'],
+    matcher: ['/admin', '/admin/:path*', '/checkout', '/checkout/:path*'],
 };

@@ -44,4 +44,21 @@ export class AuthService {
       },
     });
   }
+
+  // Método para registro de clientes
+  async registerCustomer(email: string, pass: string) {
+    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      throw new UnauthorizedException('E-mail já cadastrado.');
+    }
+
+    const hashedPassword = await bcrypt.hash(pass, 10);
+    return this.prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        role: 'CUSTOMER',
+      },
+    });
+  }
 }

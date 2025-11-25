@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, HttpCode, HttpStatus, UseGuards, HttpException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, HttpCode, HttpStatus, UseGuards, HttpException, Request } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Guarda de Segurança
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -12,8 +12,16 @@ export class OrdersController {
   // Requer token JWT para criar o pedido (enviado pelo CartDrawer)
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  create(@Body() createOrderDto: CreateOrderDto, @Request() req: any) {
+    return this.ordersService.create(createOrderDto, req.user.sub);
+  }
+
+  // =========================================================================
+  // 1.1. MEUS PEDIDOS (GET /orders/my-orders) - Customer Use
+  @UseGuards(JwtAuthGuard)
+  @Get('my-orders')
+  findMyOrders(@Request() req: any) {
+    return this.ordersService.findMyOrders(req.user.sub);
   }
 
   // =========================================================================

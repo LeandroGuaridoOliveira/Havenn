@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import { Lock, ArrowRight, AlertCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Lock, ArrowRight, AlertCircle, User } from "lucide-react";
 // IMPORTANTE: Os dois pontos (..) significam "volte uma pasta" para achar components
 import VantaBackground from "../components/VantaBackground";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,8 +33,8 @@ export default function LoginPage() {
         // 2. Salva o Token no Cookie (dura 1 dia)
         document.cookie = `havenn_token=${data.access_token}; path=/; max-age=86400`;
 
-        // 3. Redireciona para o Admin
-        router.push("/admin");
+        // 3. Redireciona para o callbackUrl ou Home
+        router.push(callbackUrl);
       } else {
         setError("Credenciais inválidas. Acesso negado.");
       }
@@ -58,10 +60,10 @@ export default function LoginPage() {
           {/* Cabeçalho */}
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/5 border border-white/10 mb-6 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-              <Lock size={20} className="text-zinc-400" />
+              <User size={20} className="text-zinc-400" />
             </div>
-            <h1 className="text-2xl font-medium text-white tracking-tight mb-2">Acesso Restrito</h1>
-            <p className="text-sm text-zinc-500">Identifique-se para gerenciar o Havenn.</p>
+            <h1 className="text-2xl font-medium text-white tracking-tight mb-2">Bem-vindo de volta</h1>
+            <p className="text-sm text-zinc-500">Entre na sua conta para continuar.</p>
           </div>
 
           {/* Formulário */}
@@ -71,7 +73,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
-                placeholder="admin@havenn.com"
+                placeholder="seu@email.com"
                 className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all placeholder:text-zinc-700"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -79,7 +81,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Senha Mestra</label>
+              <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Senha</label>
               <input
                 type="password"
                 required
@@ -103,11 +105,20 @@ export default function LoginPage() {
             >
               {loading ? "Autenticando..." : (
                 <>
-                  Acessar Painel <ArrowRight size={18} />
+                  Entrar <ArrowRight size={18} />
                 </>
               )}
             </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-zinc-500 text-sm">
+              Não tem uma conta?{" "}
+              <a href="/register" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+                Criar conta
+              </a>
+            </p>
+          </div>
         </div>
 
         <div className="text-center mt-8">
