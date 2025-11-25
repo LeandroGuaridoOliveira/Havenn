@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Footer from "./components/Footer";
-import VantaBackground from "./components/VantaBackground";
-import CartTrigger from "./components/CartTrigger"; // <--- Importante: O Botão Inteligente
+// VantaBackground removed
+import CartTrigger from "./components/CartTrigger";
 import { Search, ArrowRight, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers"; // Import necessário para verificar o admin
 
 interface Product {
   id: string;
@@ -12,6 +13,20 @@ interface Product {
   price: string;
   category: string;
   imageUrl: string | null;
+}
+
+// Função para decodificar o token e ver se é admin
+function getUserRoleFromToken(token?: string): string | null {
+  if (!token) return null;
+  try {
+    const payloadBase64 = token.split('.')[1];
+    if (!payloadBase64) return null;
+    const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8');
+    const payload = JSON.parse(payloadJson);
+    return payload.role || null;
+  } catch (e) {
+    return null;
+  }
 }
 
 async function getProducts(search?: string, category?: string): Promise<Product[]> {
@@ -35,6 +50,12 @@ export default async function Home(props: {
   const currentSearch = params.search || '';
   const products = await getProducts(currentSearch, currentCategory);
 
+  // 1. Verificação de Admin no Servidor
+  const cookieStore = await cookies();
+  const token = cookieStore.get("havenn_token")?.value;
+  const userRole = getUserRoleFromToken(token);
+  const isAdmin = userRole === 'ADMIN';
+
   async function searchAction(formData: FormData) {
     "use server";
     const query = formData.get("q")?.toString();
@@ -42,9 +63,9 @@ export default async function Home(props: {
   }
 
   return (
-    <div className="min-h-screen selection:bg-white/20 bg-[#09090b]">
+    <div className="min-h-screen selection:bg-indigo-500/30 bg-[#09090b]">
 
-      <nav className="fixed top-0 w-full z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-white/[0.02]">
+      <nav className="fixed top-0 w-full z-50 bg-[#09090b]/80 backdrop-blur-sm border-b border-white/[0.02]">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="text-2xl font-semibold tracking-[-0.05em] text-white flex items-center gap-2">
             <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
@@ -63,19 +84,27 @@ export default async function Home(props: {
           </form>
 
           <div className="flex items-center gap-6">
-            <Link href="/admin" className="text-xs uppercase tracking-widest text-zinc-500 hover:text-white transition duration-300">
-              Admin
-            </Link>
 
-            {/* AQUI ESTAVA O PROBLEMA: Agora usamos apenas o componente */}
+            {/* 2. Link Admin Condicional */}
+            {isAdmin && (
+              <Link href="/admin" className="text-xs uppercase tracking-widest text-zinc-500 hover:text-white transition duration-300">
+                Admin
+              </Link>
+            )}
+
             <CartTrigger />
-
           </div>
         </div>
       </nav>
 
       <header className="relative overflow-hidden pt-48 pb-24 px-6 text-center border-b border-white/[0.05]">
-        <VantaBackground />
+        {/* CSS Animated Background */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-indigo-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-purple-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+        </div>
+
         <div className="relative z-10 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/[0.1] text-[10px] font-medium text-zinc-300 mb-8 uppercase tracking-widest backdrop-blur-md">
             <Sparkles size={10} className="text-indigo-400" /> Nova Coleção Disponível
@@ -91,7 +120,7 @@ export default async function Home(props: {
         </div>
       </header>
 
-      <div className="sticky top-20 z-40 bg-[#09090b]/90 backdrop-blur-xl border-y border-white/[0.02] py-4">
+      <div className="sticky top-20 z-40 bg-[#09090b]/90 backdrop-blur-sm border-y border-white/[0.02] py-4">
         <div className="max-w-7xl mx-auto px-6 flex gap-2 overflow-x-auto no-scrollbar justify-center">
           {['Todos', 'Software', 'Script', 'E-book', 'Source Code'].map(cat => (
             <Link
@@ -163,6 +192,6 @@ export default async function Home(props: {
         )}
       </main>
       <Footer />
-    </div>
+    </div >
   );
 }
