@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
         try {
             // Chamada ao Backend (GET /orders/email/:email)
-            const res = await fetch(`http://localhost:3333/orders/email/${email}`);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/orders/email/${email}`);
 
             if (res.ok) {
                 const data = await res.json();

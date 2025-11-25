@@ -46,7 +46,7 @@ export default function MyOrdersPage() {
                 return;
             }
 
-            const res = await fetch("http://localhost:3333/orders/my-orders", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/orders/my-orders`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -76,7 +76,7 @@ export default function MyOrdersPage() {
                 .find((row) => row.startsWith("havenn_token="))
                 ?.split("=")[1];
 
-            const res = await fetch(`http://localhost:3333/orders/${orderId}/download/${productId}`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/orders/${orderId}/download/${productId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

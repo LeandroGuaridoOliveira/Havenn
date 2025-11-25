@@ -2,6 +2,7 @@
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma.service';
 import { OrderStatus } from '@prisma/client';
 import { EmailService } from '../email/email.service';
@@ -15,7 +16,8 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
-    private downloadService: DownloadService // <-- Secure download token service
+    private downloadService: DownloadService, // <-- Secure download token service
+    private configService: ConfigService
   ) { }
 
   // =========================================================================
@@ -36,7 +38,8 @@ export class OrdersService {
    */
   private getSecureDownloadUrl(orderId: string, productId: string): string {
     const token = this.downloadService.generateToken(orderId, productId);
-    return `http://localhost:3333/download/secure/${productId}?token=${token}`;
+    const baseUrl = this.configService.get<string>('API_URL') || 'http://localhost:3333';
+    return `${baseUrl}/download/secure/${productId}?token=${token}`;
   }
 
   // =========================================================================
@@ -44,24 +47,38 @@ export class OrdersService {
   // =========================================================================
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
-    const { items, total, customerEmail } = createOrderDto;
+    const { items, customerEmail } = createOrderDto;
 
     // GERAÇÃO DA CHAVE DE LICENÇA ÚNICA (Anti-Pirataria)
     const licenseKey = crypto.randomUUID();
 
-    // 1. Validar Usuário (Opcional, pois o JWT já garante)
-    // const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    // if (!user) throw new Error('Usuário não encontrado.');
+    let calculatedTotal = 0;
+    const orderItemsData: any[] = [];
 
-    const orderItemsData = items.map((item) => ({
-      productId: item.id,
-      price: item.price,
-    }));
+    // 2. SERVER-SIDE PRICE CALCULATION
+    for (const item of items) {
+      const product = await this.prisma.product.findUnique({
+        where: { id: item.productId }
+      });
 
-    // 2. CRIAÇÃO DA ORDEM COM FK E LICENÇA
+      if (!product) {
+        throw new Error(`Produto com ID ${item.productId} não encontrado.`);
+      }
+
+      // Calculate item total
+      const itemTotal = Number(product.price) * item.quantity;
+      calculatedTotal += itemTotal;
+
+      orderItemsData.push({
+        productId: product.id,
+        price: product.price, // Saving the snapshot of the REAL price from DB
+      });
+    }
+
+    // 3. CRIAÇÃO DA ORDEM COM FK E LICENÇA
     const order = await this.prisma.order.create({
       data: {
-        totalAmount: total,
+        totalAmount: calculatedTotal, // Using SERVER-SIDE calculated total
         customerEmail: customerEmail,
         userId: userId, // VÍNCULO AO FK (User Logado)
         licenseKey: licenseKey, // SALVANDO A CHAVE
@@ -73,7 +90,7 @@ export class OrdersService {
       include: { items: { include: { product: true } } },
     });
 
-    // 3. MOCK DE ENTREGA E ENVIO DE E-MAIL
+    // 4. MOCK DE ENTREGA E ENVIO DE E-MAIL
     if (order.status === OrderStatus.PENDING) {
       await this.handlePaymentSuccess(order.id);
 

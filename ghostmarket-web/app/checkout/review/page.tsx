@@ -140,7 +140,7 @@ export default function CheckoutReviewPage() {
     const handleFinalizePurchase = async (e: any) => {
         e.preventDefault && e.preventDefault();
         console.log("handleFinalizePurchase called");
-        alert("Iniciando processamento do pedido..."); // Debug alert
+        alert("Iniciando processamento do pedido...");
 
         if (!validateForm()) {
             console.log("Validation failed", errors);
@@ -153,14 +153,12 @@ export default function CheckoutReviewPage() {
         const token = document.cookie.split('; ').find(row => row.startsWith('havenn_token='))?.split('=')[1];
 
         const orderData = {
-            items: items.map(i => ({ id: i.id, price: i.price })),
-            total: total,
+            items: items.map(i => ({ productId: i.id, quantity: 1 })),
             customerEmail: customerEmail,
-            // Removed extra fields to match Backend DTO and avoid 400 Bad Request
         };
 
         try {
-            const res = await fetch("http://localhost:3333/orders", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/orders`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -171,7 +169,7 @@ export default function CheckoutReviewPage() {
 
             if (res.ok) {
                 const data = await res.json();
-                setIsSuccess(true); // Prevent redirect to home
+                setIsSuccess(true);
                 clearCart();
                 router.push(`/checkout/success/${data.id}`);
             } else {

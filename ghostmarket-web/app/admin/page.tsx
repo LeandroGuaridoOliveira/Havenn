@@ -34,7 +34,7 @@ export default function AdminPage() {
     setLoadingStats(true);
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('havenn_token='))?.split('=')[1];
-      const res = await fetch("http://localhost:3333/orders/stats", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/orders/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -86,7 +86,7 @@ export default function AdminPage() {
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('havenn_token='))?.split('=')[1];
 
-      const res = await fetch("http://localhost:3333/products", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/products`, {
         method: "POST",
         headers: {
           'Authorization': `Bearer ${token}`
@@ -297,16 +297,16 @@ export default function AdminPage() {
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                       onChange={(e) => setImage(e.target.files ? e.target.files[0] : null)}
                     />
-                    <div className={`h-full border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all duration-300 ${image ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-zinc-800 bg-[#0c0c0e] group-hover:border-zinc-600'}`}>
+                    <div className="w-full h-full border-2 border-dashed border-zinc-700 rounded-xl flex flex-col items-center justify-center text-zinc-500 group-hover:border-indigo-500/50 group-hover:text-indigo-400 transition-all bg-[#0c0c0e]">
                       {image ? (
-                        <>
-                          <CheckCircle className="text-indigo-500 mb-2" size={24} />
-                          <span className="text-white font-medium text-sm truncate max-w-[80%]">{image.name}</span>
-                        </>
+                        <div className="flex flex-col items-center">
+                          <CheckCircle className="text-emerald-500 mb-2" />
+                          <span className="text-xs">{image.name}</span>
+                        </div>
                       ) : (
                         <>
-                          <ImageIcon className="text-zinc-500 mb-2 group-hover:text-white transition-colors" size={24} />
-                          <span className="text-zinc-400 text-xs font-medium group-hover:text-white transition-colors">Imagem (.jpg, .png)</span>
+                          <ImageIcon size={24} className="mb-2" />
+                          <span className="text-xs font-medium">Arraste ou clique</span>
                         </>
                       )}
                     </div>
@@ -315,19 +315,16 @@ export default function AdminPage() {
 
                 <div>
                   <label className={labelClass}>Categoria</label>
-                  <div className="relative">
-                    <select
-                      className={`${inputClass} appearance-none cursor-pointer`}
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    >
-                      <option>Software</option>
-                      <option>Script</option>
-                      <option>E-book</option>
-                      <option>Source Code</option>
-                    </select>
-                    <div className="absolute right-3 top-3.5 pointer-events-none text-zinc-500">▼</div>
-                  </div>
+                  <select
+                    className={inputClass}
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="Software">Software</option>
+                    <option value="Script">Script</option>
+                    <option value="Ebook">Ebook</option>
+                    <option value="Curso">Curso</option>
+                  </select>
                 </div>
 
                 <div>
@@ -342,90 +339,97 @@ export default function AdminPage() {
                     required
                   />
                 </div>
-              </div>
 
-              {/* Details */}
-              <div className="space-y-6">
                 <div>
-                  <label className={labelClass}>Descrição Curta (Card)</label>
+                  <label className={labelClass}>Link do Vídeo (YouTube)</label>
                   <input
-                    type="text"
+                    type="url"
                     className={inputClass}
-                    placeholder="Resumo de uma linha..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Detalhes Técnicos (Página do Produto)</label>
-                  <textarea
-                    rows={6}
-                    className={inputClass}
-                    placeholder="Funcionalidades, requisitos, tutorial de instalação..."
-                    value={formData.details}
-                    onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Vídeo Preview (YouTube URL)</label>
-                  <input
-                    type="text"
-                    className={inputClass}
-                    placeholder="https://youtube.com/watch?v=..."
+                    placeholder="https://youtube.com/..."
                     value={formData.videoUrl}
                     onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
                   />
                 </div>
               </div>
 
-              {/* Uploads Area */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/[0.05]">
-                <div className="md:col-span-2">
-                  <label className={labelClass}>Arquivo do Produto (Obrigatório)</label>
-                  <div className="relative group h-32">
-                    <input
-                      id="fileInput"
-                      type="file"
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
-                    />
-                    <div className={`h-full border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all duration-300 ${file ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-zinc-800 bg-[#0c0c0e] group-hover:border-zinc-600'}`}>
-                      {file ? (
-                        <>
-                          <CheckCircle className="text-emerald-500 mb-2" size={24} />
-                          <span className="text-white font-medium text-sm truncate max-w-[80%]">{file.name}</span>
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="text-zinc-500 mb-2 group-hover:text-white transition-colors" size={24} />
-                          <span className="text-zinc-400 text-xs font-medium group-hover:text-white transition-colors">Arquivo (.zip, .rar)</span>
-                        </>
-                      )}
-                    </div>
+              {/* Description */}
+              <div>
+                <label className={labelClass}>Descrição Curta</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Resumo do produto..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
+                />
+              </div>
+
+              {/* Details */}
+              <div>
+                <label className={labelClass}>Detalhes (Markdown/HTML)</label>
+                <textarea
+                  className={`${inputClass} h-32 resize-none`}
+                  placeholder="Descreva todas as funcionalidades..."
+                  value={formData.details}
+                  onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+                  required
+                />
+              </div>
+
+              {/* File Upload */}
+              <div>
+                <label className={labelClass}>Arquivo do Produto (.zip, .rar, .exe)</label>
+                <div className="relative group">
+                  <input
+                    id="fileInput"
+                    type="file"
+                    accept=".zip,.rar,.exe,.7z"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+                    required
+                  />
+                  <div className="w-full bg-[#0c0c0e] border border-zinc-800 rounded-xl p-4 flex items-center justify-center gap-3 text-zinc-500 group-hover:border-indigo-500/50 group-hover:text-indigo-400 transition-all">
+                    {file ? (
+                      <>
+                        <CheckCircle className="text-emerald-500" size={20} />
+                        <span className="text-sm font-medium text-zinc-300">{file.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud size={20} />
+                        <span className="text-sm font-medium">Clique para selecionar o arquivo</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Action Button & Status */}
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={status.type === 'loading'}
-                  className="w-full bg-white text-black font-bold h-12 rounded-xl hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {status.type === 'loading' ? "Processando..." : "Publicar Produto"}
-                </button>
+              {/* Status Message */}
+              {status.msg && (
+                <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-medium ${status.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                  status.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                    'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                  }`}>
+                  {status.type === 'success' ? <CheckCircle size={18} /> :
+                    status.type === 'error' ? <AlertCircle size={18} /> :
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+                  {status.msg}
+                </div>
+              )}
 
-                {status.msg && (
-                  <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 text-sm ${status.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                    {status.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-                    {status.msg}
-                  </div>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={status.type === 'loading'}
+                className="w-full bg-white text-black font-bold h-12 rounded-xl hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              >
+                {status.type === 'loading' ? "Processando..." : (
+                  <>
+                    <PackagePlus size={18} /> Cadastrar Produto
+                  </>
                 )}
-              </div>
+              </button>
             </form>
           </div>
         )}

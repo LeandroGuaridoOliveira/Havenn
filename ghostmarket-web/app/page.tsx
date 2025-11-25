@@ -29,8 +29,10 @@ function getUserRoleFromToken(token?: string): string | null {
   }
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+
 async function getProducts(search?: string, category?: string): Promise<Product[]> {
-  const url = new URL("http://localhost:3333/products");
+  const url = new URL(`${API_URL}/products`);
   if (search) url.searchParams.append("search", search);
   if (category) url.searchParams.append("category", category);
 
@@ -156,7 +158,7 @@ export default async function Home(props: {
 
                     {product.imageUrl ? (
                       <img
-                        src={`http://localhost:3333${product.imageUrl}`}
+                        src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}${product.imageUrl}`}
                         alt={product.name}
                         className="w-full h-full object-cover rounded-xl shadow-2xl"
                       />

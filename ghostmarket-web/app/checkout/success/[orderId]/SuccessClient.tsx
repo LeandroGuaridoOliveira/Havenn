@@ -33,7 +33,7 @@ async function processOrderAndGetLink(orderId: string, setDownloadInfo: any, set
         // ----------------------------------------------------
 
         // A. Buscar Detalhes do Pedido (PRIMEIRA CHAMADA - AGORA COM AUTH HEADER)
-        const orderDetailsRes = await fetch(`http://localhost:3333/orders/${orderId}`, {
+        const orderDetailsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/orders/${orderId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -43,7 +43,7 @@ async function processOrderAndGetLink(orderId: string, setDownloadInfo: any, set
         if (!firstItem) throw new Error('O pedido está vazio.');
 
         // B. Simular Webhook (PATCH para PAID) - Requer Autenticação
-        const webhookRes = await fetch(`http://localhost:3333/orders/${orderId}/status`, {
+        const webhookRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/orders/${orderId}/status`, {
             method: 'PATCH',
             headers: authHeaders,
             body: JSON.stringify({ status: 'PAID' }),
@@ -52,7 +52,7 @@ async function processOrderAndGetLink(orderId: string, setDownloadInfo: any, set
         if (!webhookRes.ok) throw new Error('Falha ao simular pagamento.');
 
         // C. Buscar o Link de Download Seguro (GET) - Requer Autenticação
-        const downloadRes = await fetch(`http://localhost:3333/orders/${orderId}/download/${firstItem.productId}`, {
+        const downloadRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/orders/${orderId}/download/${firstItem.productId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

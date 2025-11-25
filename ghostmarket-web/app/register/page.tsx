@@ -23,7 +23,7 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const res = await fetch("http://localhost:3333/auth/register-customer", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/auth/register-customer`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -36,7 +36,7 @@ export default function RegisterPage() {
                 // Auto-login after registration or redirect to login
                 // For simplicity, let's redirect to login for now, or we could auto-login
                 // Let's try to auto-login immediately
-                const loginRes = await fetch("http://localhost:3333/auth/login", {
+                const loginRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/auth/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

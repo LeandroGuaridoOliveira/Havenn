@@ -1,27 +1,26 @@
-// Importe estes módulos se ainda não tiver feito: npm install class-validator class-transformer
-import { IsEmail, IsNotEmpty, IsArray, IsNumber, IsString, ValidateNested } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsArray, IsNumber, IsString, ValidateNested, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 // 1. O que é um Item dentro do Pedido
 export class CreateOrderItemDto {
   @IsNotEmpty()
   @IsString()
-  id: string; // Product ID
+  productId: string; // Changed from id to productId for clarity and security
 
   @IsNotEmpty()
   @IsNumber()
-  price: number; // Price snapshot
+  @Min(1)
+  quantity: number;
 }
 
 // 2. O que é o Pedido (Payload principal)
 export class CreateOrderDto {
   @IsEmail()
-  @IsNotEmpty() // Tornamos obrigatório agora que o Frontend coleta o dado
+  @IsNotEmpty()
   customerEmail: string;
 
-  @IsNotEmpty()
-  @IsNumber()
-  total: number;
+  // Total removed - calculated on server
+  // total: number; 
 
   @IsNotEmpty()
   @IsArray()

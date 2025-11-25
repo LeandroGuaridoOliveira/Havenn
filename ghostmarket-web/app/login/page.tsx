@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, ArrowRight, AlertCircle, User } from "lucide-react";
 // IMPORTANTE: Os dois pontos (..) significam "volte uma pasta" para achar components
 import VantaBackground from "../components/VantaBackground";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
@@ -21,7 +21,7 @@ export default function LoginPage() {
 
     try {
       // 1. Tenta bater na API de Login
-      const res = await fetch("http://localhost:3333/auth/login", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -128,5 +128,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
