@@ -29,7 +29,7 @@ function getUserRoleFromToken(token?: string): string | null {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+const API_URL = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
 
 async function getProducts(search?: string, category?: string): Promise<Product[]> {
   const url = new URL(`${API_URL}/products`);

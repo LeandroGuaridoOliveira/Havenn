@@ -54,6 +54,7 @@ services:
       - ./ghostmarket-web/.env.local
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3333
+      INTERNAL_API_URL: http://api:3333
     depends_on:
       - api
     networks:

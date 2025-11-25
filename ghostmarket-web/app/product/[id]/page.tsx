@@ -3,7 +3,7 @@ import { ArrowLeft, ShieldCheck, Play, Download, CheckCircle2, Zap } from "lucid
 import AddToCartButton from "../../components/AddToCartButton";
 
 async function getProduct(id: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/products/${id}`, { cache: "no-store" });
+  const res = await fetch(`${process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/products/${id}`, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json();
 }
