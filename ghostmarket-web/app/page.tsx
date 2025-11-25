@@ -2,6 +2,7 @@ import Link from "next/link";
 import Footer from "./components/Footer";
 // VantaBackground removed
 import CartTrigger from "./components/CartTrigger";
+import UserMenu from "./components/UserMenu";
 import { Search, ArrowRight, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers"; // Import necessário para verificar o admin
@@ -94,6 +95,7 @@ export default async function Home(props: {
               </Link>
             )}
 
+            <UserMenu />
             <CartTrigger />
           </div>
         </div>

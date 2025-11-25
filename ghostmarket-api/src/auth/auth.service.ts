@@ -1,4 +1,3 @@
-
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
@@ -27,15 +26,15 @@ export class AuthService {
     const payload = {
       email: user.email,
       sub: user.id,
-      role: user.role  // Include role for authorization
+      role: user.role
     };
     return {
       access_token: this.jwtService.sign(payload),
-      user: user // Return user info (without password) for frontend convenience
+      user: user
     };
   }
 
-  // Método auxiliar para criarmos o primeiro Admin (já que não temos tela de registro)
+  // Método auxiliar para criarmos o primeiro Admin
   async register(email: string, pass: string) {
     const hashedPassword = await bcrypt.hash(pass, 10);
     const user = await this.prisma.user.create({
@@ -66,5 +65,12 @@ export class AuthService {
     });
     const { password, ...result } = user;
     return result;
+  }
+
+  // Find user by ID for profile endpoint
+  async findUserById(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+    });
   }
 }

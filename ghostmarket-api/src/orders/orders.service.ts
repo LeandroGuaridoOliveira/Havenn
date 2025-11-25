@@ -134,14 +134,6 @@ export class OrdersService {
   // 4. MÉTODOS DE BUSCA E CRUD
   // =========================================================================
 
-  async findOrdersByEmail(email: string) {
-    return await this.prisma.order.findMany({
-      where: { customerEmail: email },
-      include: { items: { include: { product: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
   async findMyOrders(userId: string) {
     return await this.prisma.order.findMany({
       where: { userId: userId },

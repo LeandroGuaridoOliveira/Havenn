@@ -1,6 +1,7 @@
-import { Controller, Post, Body, UnauthorizedException, Request } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Request, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuditService } from '../audit/audit.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -48,5 +49,17 @@ export class AuthController {
   @Post('register-customer')
   async registerCustomer(@Body() body: { email: string; password: string }) {
     return this.authService.registerCustomer(body.email, body.password);
+  }
+
+  // Get authenticated user profile
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getProfile(@Request() req: any) {
+    const user = await this.authService.findUserById(req.user.sub);
+    if (!user) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
+    const { password, ...result } = user;
+    return result;
   }
 }

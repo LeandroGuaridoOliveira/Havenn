@@ -96,15 +96,7 @@ export class OrdersController {
   }
 
   // =========================================================================
-  // 6. BUSCA POR E-MAIL (GET /orders/email/:email) - Customer Lookup
-  // Não é protegida, pois o e-mail é a chave pública de consulta do cliente.
-  @Get('email/:email')
-  async findOrdersByEmail(@Param('email') email: string) {
-    return this.ordersService.findOrdersByEmail(email);
-  }
-
-  // =========================================================================
-  // 7. DASHBOARD STATS (GET /orders/stats) - Admin Only
+  // 6. DASHBOARD STATS (GET /orders/stats) - Admin Only
   // =========================================================================
   @UseGuards(JwtAuthGuard)
   @Get('stats')
