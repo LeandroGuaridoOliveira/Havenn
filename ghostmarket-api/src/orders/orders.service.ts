@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma.service';
 import { OrderStatus, Prisma } from '@prisma/client';
@@ -59,7 +59,7 @@ export class OrdersService {
     });
 
     if (products.length !== productIds.length) {
-      throw new Error('Um ou mais produtos não foram encontrados.');
+      throw new NotFoundException('Um ou mais produtos não foram encontrados.');
     }
 
     let calculatedTotal = new Prisma.Decimal(0);
@@ -156,10 +156,10 @@ export class OrdersService {
       include: { items: true }
     });
 
-    if (!order || order.status !== 'PAID') throw new Error('Pedido não encontrado ou não pago.');
+    if (!order || order.status !== 'PAID') throw new BadRequestException('Pedido não encontrado ou não pago.');
 
     const item = order.items.find(i => i.productId === productId);
-    if (!item) throw new Error('Produto não faz parte deste pedido.');
+    if (!item) throw new BadRequestException('Produto não faz parte deste pedido.');
 
     const downloadUrl = this.getSecureDownloadUrl(orderId, productId);
 

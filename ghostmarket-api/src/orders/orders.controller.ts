@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Param, Patch, HttpCode, HttpStatus, UseGuards, HttpException, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, HttpCode, HttpStatus, UseGuards, HttpException, Request, Headers, BadRequestException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Guarda de Segurança
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @Controller('orders')
@@ -54,6 +54,33 @@ export class OrdersController {
       throw new HttpException('Status inválido.', HttpStatus.BAD_REQUEST);
     }
     return this.ordersService.updateStatus(orderId, status);
+  }
+
+  // =========================================================================
+  // 4.1. WEBHOOK REAL (POST /orders/webhook)
+  // Endpoint para receber notificações do Gateway de Pagamento (ex: Stripe)
+  // =========================================================================
+  @Post('webhook')
+  async handleWebhook(
+    @Headers('stripe-signature') signature: string,
+    @Body() event: any
+  ) {
+    if (!signature) {
+      throw new BadRequestException('Missing stripe-signature header');
+    }
+
+    // TODO: Validar a assinatura real usando a chave secreta do Stripe
+    // const isValid = stripe.webhooks.constructEvent(event, signature, process.env.STRIPE_WEBHOOK_SECRET);
+    // if (!isValid) throw new BadRequestException('Invalid signature');
+
+    console.log('Webhook received:', event.type);
+
+    if (event.type === 'checkout.session.completed') {
+      const orderId = event.data.object.metadata.orderId;
+      await this.ordersService.updateStatus(orderId, 'PAID');
+    }
+
+    return { received: true };
   }
 
   // =========================================================================
