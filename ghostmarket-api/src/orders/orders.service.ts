@@ -8,6 +8,8 @@ import { OrderStatus } from '@prisma/client';
 import { EmailService } from '../email/email.service';
 import { DownloadService } from '../download/download.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class OrdersService {
@@ -17,7 +19,8 @@ export class OrdersService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private downloadService: DownloadService, // <-- Secure download token service
-    private configService: ConfigService
+    private configService: ConfigService,
+    @InjectQueue('email') private emailQueue: Queue,
   ) { }
 
   // =========================================================================
@@ -109,14 +112,16 @@ export class OrdersService {
           firstItem.product.id
         );
 
-        // CHAMA O SERVIÇO DE E-MAIL COM A CHAVE FINAL
-        await this.emailService.sendDownloadLink(
-          completedOrder.customerEmail || 'admin@havenn.com',
+        // CHAMA O SERVIÇO DE E-MAIL VIA FILA (ASSÍNCRONO)
+        await this.emailQueue.add('send-link', {
+          recipientEmail: completedOrder.customerEmail || 'admin@havenn.com',
           downloadLink,
-          completedOrder.id,
+          orderId: completedOrder.id,
           productTitle,
-          completedOrder.licenseKey || 'N/A' // Fallback de tipagem
-        );
+          licenseKey: completedOrder.licenseKey || 'N/A',
+        });
+
+        this.logger.log(`Job de e-mail adicionado à fila para o pedido ${completedOrder.id}`);
       }
     }
 

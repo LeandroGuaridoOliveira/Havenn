@@ -1,15 +1,10 @@
-version: '3.8'
-
-services:
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
-    container_name: ghostmarket_db
+    container_name: ghostmarket_mysql
     restart: always
     ports:
-      - "3307:3306" # 
+      - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -17,6 +12,58 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - ghostmarket_network
+
+  redis:
+    image: redis:alpine
+    container_name: ghostmarket_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - ghostmarket_network
+
+  api:
+    build: ./ghostmarket-api
+    container_name: ghostmarket_api
+    restart: always
+    ports:
+      - "3333:3333"
+    env_file:
+      - ./ghostmarket-api/.env
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - ghostmarket_network
+
+  web:
+    build: ./ghostmarket-web
+    container_name: ghostmarket_web
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./ghostmarket-web/.env.local
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3333
+    depends_on:
+      - api
+    networks:
+      - ghostmarket_network
 
 volumes:
   mysql_data:
+  uploads_data:
+
+
+networks:
+  ghostmarket_network:
+    driver: bridge
