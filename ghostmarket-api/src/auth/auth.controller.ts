@@ -55,7 +55,14 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@Request() req: any) {
-    const user = await this.authService.findUserById(req.user.sub);
+    // jwt.strategy returns userId, not sub
+    const userId = req.user?.userId || req.user?.sub;
+    if (!userId) {
+      console.error('User object:', req.user);
+      throw new UnauthorizedException('User ID not found in token');
+    }
+
+    const user = await this.authService.findUserById(userId);
     if (!user) {
       throw new UnauthorizedException('Usuário não encontrado');
     }
