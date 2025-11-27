@@ -100,12 +100,55 @@ model Product {
   storageKey    String
   isActive      Boolean  @default(true)
   
-  orderItems    OrderItem[] 
+  orderItems    OrderItem[]
+  modules       Module[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@map("products")
+}
+
+model Module {
+  id        String   @id @default(uuid())
+  title     String
+  order     Int
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  lessons   Lesson[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("modules")
+}
+
+model Lesson {
+  id          String   @id @default(uuid())
+  title       String
+  videoUrl    String
+  description String?  @db.Text
+  order       Int
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id])
+  
+  userProgress UserProgress[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("lessons")
+}
+
+model UserProgress {
+  id        String   @id @default(uuid())
+  userId    String
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  completedAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+  @@map("user_progress")
 }
 
 model AuditLog {

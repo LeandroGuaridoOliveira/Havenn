@@ -53,7 +53,28 @@ export class ProductsService {
         storageKey: storageKey,
         imageUrl: imageUrl,
         isActive: true,
+        modules: createProductDto.modules ? {
+          create: createProductDto.modules.map(module => ({
+            title: module.title,
+            order: module.order,
+            lessons: {
+              create: module.lessons.map(lesson => ({
+                title: lesson.title,
+                videoUrl: lesson.videoUrl,
+                description: lesson.description,
+                order: lesson.order,
+              }))
+            }
+          }))
+        } : undefined,
       },
+      include: {
+        modules: {
+          include: {
+            lessons: true
+          }
+        }
+      }
     });
   }
 
@@ -85,6 +106,16 @@ export class ProductsService {
   async findOne(id: string) {
     return await this.prisma.product.findUnique({
       where: { id },
+      include: {
+        modules: {
+          orderBy: { order: 'asc' },
+          include: {
+            lessons: {
+              orderBy: { order: 'asc' }
+            }
+          }
+        }
+      }
     });
   }
 

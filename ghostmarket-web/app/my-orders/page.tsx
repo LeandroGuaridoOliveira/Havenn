@@ -178,11 +178,11 @@ export default function MyOrdersPage() {
                                                 </div>
                                                 {order.status === 'PAID' && (
                                                     <button
-                                                        onClick={() => handleDownload(order.id, item.product.id)} // Assuming item.product.id is available, might need to check DTO
-                                                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-all group-hover:border-indigo-500/30 group-hover:bg-indigo-500/10"
+                                                        onClick={() => router.push(`/classroom/${item.product.id}`)}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 border border-indigo-500/50 rounded-lg text-sm transition-all text-white shadow-lg shadow-indigo-500/20"
                                                     >
-                                                        <Download size={16} className="text-indigo-400" />
-                                                        <span>Download</span>
+                                                        <ShoppingBag size={16} />
+                                                        <span>Assistir Aulas</span>
                                                     </button>
                                                 )}
                                             </div>
